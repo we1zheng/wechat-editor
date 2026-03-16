@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公众号排版生成器 v3</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --red:#d82821;--red2:#ff4545;--rpale:rgba(216,40,33,.08);--rborder:rgba(216,40,33,.25);
+  --orange:#e2561b;--pink:#fab4b4;
+  --g1:#111827;--g2:#374151;--g3:#6b7280;--g4:#9ca3af;--g5:#f3f4f6;
+  --dark:#993d3d;
+}
+body{font-family:'PingFang SC',-apple-system,'Helvetica Neue','Microsoft YaHei',sans-serif;background:#e5e5e5;display:flex;height:100vh;overflow:hidden;}
+
+/* ── Sidebar ── */
+.sb{width:230px;flex-shrink:0;background:#0f0f0f;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.sb-logo{padding:14px 16px 10px;font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.25);border-bottom:1px solid rgba(255,255,255,.05);}
+.sb-sec{border-bottom:1px solid rgba(255,255,255,.04);}
+.sb-sec-lbl{padding:9px 16px 3px;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.18);text-transform:uppercase;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 16px;background:none;border:none;color:rgba(255,255,255,.6);font-size:12px;font-family:inherit;cursor:pointer;text-align:left;transition:.12s;}
+.sb-btn:hover{background:rgba(255,255,255,.06);color:#fff;}
+.sb-btn .ic{width:18px;text-align:center;font-size:12px;flex-shrink:0;}
+.sb-foot{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:6px;}
+.btn-main{background:var(--red);color:#fff;border:none;padding:9px;font-size:12px;font-family:inherit;cursor:pointer;letter-spacing:1px;}
+.btn-main:hover{background:var(--red2);}
+.btn-sub{background:rgba(255,255,255,.04);color:rgba(255,255,255,.4);border:1px solid rgba(255,255,255,.07);padding:7px;font-size:11px;font-family:inherit;cursor:pointer;}
+.btn-sub:hover{background:rgba(255,255,255,.09);color:#fff;}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;padding:28px 20px;display:flex;flex-direction:column;align-items:center;}
+.main-lbl{font-size:10px;color:#aaa;letter-spacing:2px;margin-bottom:12px;text-align:center;}
+#canvas{width:680px;background:#fff;min-height:300px;padding:26px 22px;box-shadow:0 4px 40px rgba(0,0,0,.15);}
+#canvas:empty::after{content:'← 点击左侧组件开始构建';color:#ccc;font-size:14px;display:block;padding:48px 0;text-align:center;}
+
+/* ── Block wrapper ── */
+.wc-wrap{position:relative;outline:2px solid transparent;outline-offset:2px;transition:outline .12s;}
+.wc-wrap:hover{outline-color:rgba(216,40,33,.28);}
+.wc-wrap.sel{outline-color:var(--red);}
+.blk-bar{display:none;position:absolute;top:-26px;right:0;background:#0f0f0f;z-index:200;white-space:nowrap;border-radius:2px 2px 0 0;}
+.wc-wrap.sel .blk-bar{display:flex;}
+.blk-bar button{background:none;border:none;color:rgba(255,255,255,.55);padding:4px 8px;font-size:10px;cursor:pointer;font-family:inherit;border-right:1px solid rgba(255,255,255,.05);}
+.blk-bar button:hover{background:rgba(255,255,255,.09);color:#fff;}
+.blk-bar button:last-child{border-right:none;}
+.blk-bar .bcp{color:#86efac!important;}
+.blk-bar .bcp:hover{background:rgba(134,239,172,.08)!important;}
+.blk-bar .bdl{color:#f87171!important;}
+.blk-bar .bdl:hover{background:rgba(248,113,113,.12)!important;}
+
+/* ═══ COMPONENT PREVIEW STYLES ═══ */
+/* 1.Cover */
+.wc-cover{margin:0 0 26px;border:1px solid rgba(192,0,0,.15);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06);}
+.wc-cv-body{padding:20px 24px 14px;}
+.wc-cv-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.wc-cv-brand{font-size:11px;letter-spacing:3px;color:var(--red);}
+.wc-cv-year{font-size:10px;color:var(--g4);}
+.wc-cv-row{display:flex;align-items:center;gap:16px;}
+.wc-cv-text{flex:1;min-width:0;line-height:1.2;}
+.wc-cv-del{font-size:14px;color:var(--g4);text-decoration:line-through;margin-bottom:4px;}
+.wc-cv-h1{font-size:19px;color:var(--g1);font-weight:900;}
+.wc-cv-h2{font-size:26px;color:var(--red);font-weight:900;font-style:italic;margin-bottom:10px;}
+.wc-cv-bar{width:44px;height:3px;background:linear-gradient(to right,var(--red),var(--red2));margin-bottom:10px;}
+.wc-cv-desc{font-size:13px;color:var(--g4);}
+.wc-cv-img{width:130px;height:130px;flex-shrink:0;background:rgba(239,112,96,.1);border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.wc-cv-img img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+.wc-cv-foot{background:linear-gradient(135deg,var(--red),var(--red2));padding:10px 16px;display:flex;align-items:center;justify-content:space-between;}
+.wc-cv-ftxt{font-size:12px;color:rgba(255,255,255,.9);letter-spacing:.5px;}
+.wc-cv-tags{display:flex;gap:4px;}
+.wc-cv-tag{background:rgba(255,255,255,.2);border-radius:3px;font-size:8px;color:#fff;padding:1px 6px;}
+/* 2.Part */
+.wc-part{display:flex;align-items:center;gap:14px;margin:18px 0 12px;}
+.wc-pt-num{text-align:center;flex-shrink:0;}
+.wc-pt-big{font-size:26px;color:var(--red);line-height:1;letter-spacing:-2px;font-weight:900;}
+.wc-pt-lbl{font-size:8px;letter-spacing:2px;color:var(--g4);}
+.wc-pt-div{background:rgba(229,231,235,.6);width:1px;height:34px;flex-shrink:0;}
+.wc-pt-title{font-size:16px;color:var(--g1);font-weight:700;letter-spacing:.3px;margin-bottom:2px;}
+.wc-pt-sub{font-size:11px;color:var(--g4);letter-spacing:1.5px;}
+/* 3.Para */
+.wc-para{font-size:15px;color:#1a1a1a;line-height:1.75;margin:0 0 14px;letter-spacing:.3px;text-align:justify;}
+/* 4.Highlight */
+.wc-hl{background:linear-gradient(120deg,#fab4b4 0%,rgba(255,255,255,0) 100%);padding:12px 16px;margin:0 0 16px;font-size:15px;color:var(--g1);line-height:1.7;font-weight:700;border-radius:2px;}
+/* 5.Emphasis */
+.wc-em-wrap{margin:0 0 14px;font-size:15px;color:#1a1a1a;line-height:1.75;letter-spacing:.3px;text-align:justify;}
+.wc-em{font-size:15px;font-style:italic;font-weight:700;color:var(--orange);border-bottom:3px solid var(--pink);}
+/* 6.Quote */
+.wc-quote{border-left:4px solid var(--red);background:var(--rpale);padding:13px 17px;margin:0 0 16px;font-size:15px;color:var(--g2);line-height:1.7;font-style:italic;}
+.wc-quote-src{font-size:12px;color:var(--g4);margin-top:6px;font-style:normal;}
+/* 7.Alert */
+.wc-alert{padding:12px 15px;margin:0 0 16px;display:flex;gap:10px;align-items:flex-start;}
+.wc-alert.danger{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.35);color:#b91c1c;}
+.wc-alert.warning{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.4);color:#92400e;}
+.wc-alert.info{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);color:#1e40af;}
+.wc-alert.success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#166534;}
+.wc-alert-ic{font-size:16px;flex-shrink:0;margin-top:1px;}
+.wc-alert-t{font-weight:700;margin-bottom:2px;font-size:13px;letter-spacing:.5px;}
+.wc-alert-b{font-size:13px;line-height:1.6;}
+/* 8.Prompt */
+.wc-prompt{margin:0 0 20px;}
+.wc-ptag{display:inline-block;background:var(--dark);color:#fff;font-size:10px;letter-spacing:1px;padding:4px 13px;}
+.wc-pbody{background:#f2f2f2;border:1px solid rgba(229,231,235,.3);padding:16px 20px;font-size:14px;color:#2f2f2f;font-style:italic;line-height:1.75;}
+/* 9.Stats */
+.wc-stats{display:flex;border:1px solid var(--rborder);margin:0 0 20px;overflow:hidden;}
+.wc-stat{flex:1;padding:15px 10px;text-align:center;border-right:1px solid var(--rborder);background:#fff;}
+.wc-stat:last-child{border-right:none;}
+.wc-stat-n{font-size:26px;font-weight:900;color:var(--red);line-height:1;margin-bottom:4px;}
+.wc-stat-l{font-size:11px;color:var(--g4);letter-spacing:1px;}
+/* 10.Progress */
+.wc-prog{margin:0 0 18px;}
+.wc-prog-item{margin-bottom:10px;}
+.wc-prog-hd{display:flex;justify-content:space-between;margin-bottom:4px;}
+.wc-prog-lbl{font-size:13px;color:var(--g2);}
+.wc-prog-val{font-size:12px;color:var(--red);font-weight:700;}
+.wc-prog-track{height:5px;background:#f3f4f6;border-radius:3px;overflow:hidden;}
+.wc-prog-fill{height:100%;background:linear-gradient(to right,var(--red),var(--red2));border-radius:3px;}
+/* 11.Cards */
+.wc-cards{margin:0 0 24px;}
+.wc-cards-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.wc-cards-lbl{font-size:10px;letter-spacing:2px;color:var(--g3);}
+.wc-cards-hint{font-size:10px;color:var(--g4);}
+.wc-cards-scroll{overflow-x:auto;white-space:nowrap;padding-bottom:6px;}
+.wc-card{display:inline-block;vertical-align:top;width:42%;padding:12px;white-space:normal;margin-right:7px;}
+.wc-card.pri{background:linear-gradient(135deg,var(--red),var(--red2));border:1px solid rgba(192,0,0,.1);}
+.wc-card.sec{background:#fff;border:1px solid var(--rborder);box-shadow:0 2px 6px rgba(0,0,0,.04);}
+.wc-card-num{font-size:9px;letter-spacing:1px;margin-bottom:4px;font-weight:700;}
+.wc-card.pri .wc-card-num{color:rgba(255,255,255,.7);}
+.wc-card.sec .wc-card-num{color:var(--g4);}
+.wc-card-ttl{font-size:13px;font-weight:700;margin-bottom:5px;padding-right:16px;}
+.wc-card.pri .wc-card-ttl{color:#fff;}
+.wc-card.sec .wc-card-ttl{color:var(--g1);}
+.wc-card-bd{font-size:10px;line-height:1.65;}
+.wc-card.pri .wc-card-bd{color:rgba(255,255,255,.85);}
+.wc-card.sec .wc-card-bd{color:var(--g3);}
+/* 12.Divider */
+.wc-div{display:flex;align-items:center;gap:10px;margin:18px 0;}
+.wc-div-line{flex:1;height:1px;background:rgba(216,40,33,.2);}
+.wc-div-txt{font-size:10px;letter-spacing:3px;color:var(--red);white-space:nowrap;}
+/* 13.Image */
+.wc-img-wrap{margin:0 0 16px;}
+.wc-img-ph{background:#f5f5f5;border:2px dashed #ddd;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px;gap:6px;color:#bbb;font-size:13px;cursor:pointer;}
+.wc-img-ph:hover{border-color:var(--red);color:var(--red);}
+.wc-img-ph img{width:100%;height:auto;display:block;}
+.wc-img-cap{font-size:11px;color:var(--g4);text-align:center;margin-top:4px;}
+/* 14.List */
+.wc-list{margin:0 0 16px;list-style:none;}
+.wc-li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--rborder);font-size:14px;color:var(--g2);line-height:1.6;}
+.wc-li:last-child{border-bottom:none;}
+.wc-li-n{flex-shrink:0;width:22px;height:22px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+/* 15.Footer */
+.wc-foot{text-align:center;padding:24px 16px;background:#fff;border:1px solid var(--rborder);border-top:none;}
+.wc-foot-btns{display:flex;justify-content:center;gap:22px;}
+.wc-foot-btn{text-align:center;color:#4b5563;}
+.wc-foot-btn-ic{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;box-shadow:0 2px 4px rgba(0,0,0,.05);border:1px solid #f3f4f6;margin:0 auto 4px;font-size:18px;}
+.wc-foot-btn.act .wc-foot-btn-ic{background:#fff3f2;border-color:rgba(255,148,148,.3);}
+.wc-foot-btn-lbl{font-size:10px;}
+/* 16.Timeline */
+.wc-tl{margin:0 0 20px;position:relative;padding-left:22px;}
+.wc-tl::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:linear-gradient(to bottom,var(--red),var(--red2));}
+.wc-tl-item{position:relative;margin-bottom:14px;}
+.wc-tl-item:last-child{margin-bottom:0;}
+.wc-tl-dot{position:absolute;left:-18px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--red);border:2px solid #fff;box-shadow:0 0 0 2px var(--red);}
+.wc-tl-time{font-size:11px;color:var(--g4);letter-spacing:1px;margin-bottom:2px;}
+.wc-tl-title{font-size:14px;font-weight:700;color:var(--g1);margin-bottom:2px;}
+.wc-tl-body{font-size:13px;color:var(--g3);line-height:1.6;}
+/* 17.Two-col */
+.wc-2col{display:flex;gap:10px;margin:0 0 16px;}
+.wc-col{flex:1;background:#fafafa;border:1px solid var(--rborder);border-top:2px solid var(--red);padding:13px 15px;}
+.wc-col-title{font-size:12px;font-weight:700;color:var(--red);letter-spacing:1px;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid var(--rborder);}
+.wc-col-body{font-size:13px;color:var(--g2);line-height:1.65;}
+/* 18.Tags */
+.wc-tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px;}
+.wc-tag{padding:4px 12px;font-size:12px;border-radius:2px;}
+.wc-tag.red{background:var(--rpale);border:1px solid var(--rborder);color:var(--red);}
+.wc-tag.gray{background:#f3f4f6;border:1px solid #e5e7eb;color:var(--g3);}
+.wc-tag.dark{background:var(--dark);color:#fff;}
+/* 19.KV */
+.wc-kv{margin:0 0 16px;border:1px solid var(--rborder);border-top:2px solid var(--red);overflow:hidden;}
+.wc-kv-row{display:flex;border-bottom:1px solid var(--rborder);}
+.wc-kv-row:last-child{border-bottom:none;}
+.wc-kv-k{flex:0 0 110px;background:var(--rpale);padding:9px 13px;font-size:13px;font-weight:600;color:var(--red);border-right:1px solid var(--rborder);}
+.wc-kv-v{flex:1;padding:9px 13px;font-size:13px;color:var(--g2);line-height:1.6;}
+/* 20.Check */
+.wc-check{margin:0 0 16px;}
+.wc-check-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--rborder);font-size:14px;color:var(--g2);}
+.wc-check-item:last-child{border-bottom:none;}
+.wc-check-box{flex-shrink:0;width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px;}
+.wc-check-box.done{background:var(--red);color:#fff;}
+.wc-check-box.todo{background:#f3f4f6;border:1px solid var(--rborder);}
+/* 21.Callout 彩色大字突出 */
+.wc-callout{border-left:4px solid var(--red);padding:16px 20px;margin:0 0 16px;background:var(--rpale);}
+.wc-callout-icon{font-size:26px;margin-bottom:6px;}
+.wc-callout-title{font-size:18px;font-weight:900;color:var(--red);margin-bottom:4px;letter-spacing:.5px;}
+.wc-callout-body{font-size:13px;color:var(--g2);line-height:1.65;}
+/* 22.Number card 大数字卡 */
+.wc-numcard{background:linear-gradient(135deg,var(--red),var(--red2));padding:20px 22px;margin:0 0 16px;position:relative;overflow:hidden;}
+.wc-numcard::after{content:'';position:absolute;right:-20px;top:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,.06);}
+.wc-numcard-num{font-size:48px;font-weight:900;color:#fff;line-height:1;margin-bottom:4px;}
+.wc-numcard-unit{font-size:16px;color:rgba(255,255,255,.8);margin-left:4px;}
+.wc-numcard-title{font-size:14px;color:rgba(255,255,255,.9);font-weight:600;margin-bottom:2px;}
+.wc-numcard-desc{font-size:12px;color:rgba(255,255,255,.65);}
+/* 23.Steps 步骤条 */
+.wc-steps{margin:0 0 16px;}
+.wc-step{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;}
+.wc-step:last-child{margin-bottom:0;}
+.wc-step-left{flex-shrink:0;display:flex;flex-direction:column;align-items:center;}
+.wc-step-n{width:28px;height:28px;border-radius:50%;background:var(--red);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.wc-step-line{width:2px;flex:1;background:linear-gradient(to bottom,var(--red),rgba(216,40,33,.2));margin-top:4px;min-height:20px;}
+.wc-step:last-child .wc-step-line{display:none;}
+.wc-step-right{padding-top:4px;}
+.wc-step-title{font-size:14px;font-weight:700;color:var(--g1);margin-bottom:3px;}
+.wc-step-body{font-size:13px;color:var(--g3);line-height:1.6;}
+/* 24.Comparison 横向对比表 */
+.wc-cmp{margin:0 0 16px;border-collapse:collapse;width:100%;font-size:13px;}
+.wc-cmp th{background:var(--red);color:#fff;padding:9px 13px;text-align:center;font-weight:600;font-size:12px;letter-spacing:.5px;}
+.wc-cmp th:first-child{background:#333;text-align:left;}
+.wc-cmp td{padding:9px 13px;border-bottom:1px solid var(--rborder);color:var(--g2);}
+.wc-cmp td:first-child{font-weight:600;color:var(--g1);background:#fafafa;}
+.wc-cmp tr:last-child td{border-bottom:none;}
+.wc-cmp .yes{color:#16a34a;font-weight:700;}
+.wc-cmp .no{color:#dc2626;font-weight:700;}
+/* 25.Banner 横幅 */
+.wc-banner{background:linear-gradient(135deg,var(--g1) 0%,#1f2937 100%);padding:22px 24px;margin:0 0 16px;position:relative;overflow:hidden;}
+.wc-banner::before{content:'';position:absolute;right:-30px;top:50%;transform:translateY(-50%);width:120px;height:120px;border-radius:50%;background:rgba(216,40,33,.15);}
+.wc-banner-tag{font-size:10px;letter-spacing:3px;color:var(--red);margin-bottom:8px;text-transform:uppercase;}
+.wc-banner-title{font-size:22px;font-weight:900;color:#fff;line-height:1.3;margin-bottom:6px;}
+.wc-banner-desc{font-size:13px;color:rgba(255,255,255,.55);line-height:1.6;}
+/* 26.Tip inline 行内提示 */
+.wc-tip{display:inline-block;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#92400e;font-size:12px;padding:2px 10px;border-radius:3px;margin:0 3px;}
+/* 27.Code inline 行内代码 */
+.wc-code{display:inline-block;background:#f3f4f6;border:1px solid #e5e7eb;color:#b91c1c;font-size:13px;padding:1px 8px;border-radius:3px;font-family:monospace;margin:0 2px;}
+/* 28.Bold-red 红色加粗 inline */
+.wc-br{color:var(--red);font-weight:700;}
+/* 29.Annotation 注释说明 */
+.wc-note{font-size:12px;color:var(--g4);border-left:2px solid #e5e7eb;padding:4px 10px;margin:0 0 14px;line-height:1.6;font-style:italic;}
+/* 30.Rating 评分条 */
+.wc-rating{margin:0 0 16px;}
+.wc-rating-item{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.wc-rating-lbl{font-size:13px;color:var(--g2);width:80px;flex-shrink:0;}
+.wc-rating-bar{flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;}
+.wc-rating-fill{height:100%;border-radius:4px;}
+.wc-rating-val{font-size:12px;color:var(--g3);width:30px;text-align:right;flex-shrink:0;}
+
+/* 31.大字引言 */
+.wc-bigquote{text-align:center;padding:28px 20px;margin:0 0 16px;border-top:3px solid var(--red);border-bottom:3px solid var(--red);}
+.wc-bigquote-text{font-size:22px;font-weight:900;color:var(--g1);line-height:1.4;letter-spacing:1px;margin-bottom:8px;}
+.wc-bigquote-sub{font-size:13px;color:var(--g4);letter-spacing:2px;}
+
+/* 32.渐变标题 */
+.wc-gradtitle{margin:0 0 16px;padding:0 0 10px;border-bottom:1px solid var(--rborder);}
+.wc-gradtitle-main{font-size:24px;font-weight:900;line-height:1.2;margin-bottom:4px;background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.wc-gradtitle-sub{font-size:13px;color:var(--g4);letter-spacing:1px;}
+
+/* 33.彩色圆点列表 */
+.wc-dotlist{margin:0 0 16px;}
+.wc-dotlist-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;}
+.wc-dotlist-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.wc-dotlist-body{}
+.wc-dotlist-title{font-size:14px;font-weight:700;color:var(--g1);margin-bottom:2px;}
+.wc-dotlist-desc{font-size:13px;color:var(--g3);line-height:1.6;}
+
+/* 34.FAQ */
+.wc-faq{margin:0 0 16px;}
+.wc-faq-item{border-bottom:1px solid var(--rborder);padding:12px 0;}
+.wc-faq-item:last-child{border-bottom:none;}
+.wc-faq-q{font-size:14px;font-weight:700;color:var(--g1);margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;}
+.wc-faq-qmark{flex-shrink:0;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.wc-faq-a{font-size:13px;color:var(--g2);line-height:1.7;padding-left:28px;}
+
+/* 35.图文横排 */
+.wc-imgtext{display:flex;gap:16px;align-items:flex-start;margin:0 0 16px;}
+.wc-imgtext-img{flex-shrink:0;width:100px;height:100px;background:#f5f5f5;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.wc-imgtext-img img{width:100%;height:100%;object-fit:cover;}
+.wc-imgtext-body{flex:1;}
+.wc-imgtext-title{font-size:15px;font-weight:700;color:var(--g1);margin-bottom:6px;}
+.wc-imgtext-desc{font-size:13px;color:var(--g2);line-height:1.65;}
+
+/* 36.优缺点 */
+.wc-proscons{display:flex;gap:10px;margin:0 0 16px;}
+.wc-pros,.wc-cons{flex:1;padding:13px 15px;}
+.wc-pros{background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-top:2px solid #16a34a;}
+.wc-cons{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-top:2px solid #dc2626;}
+.wc-pc-title{font-size:12px;font-weight:700;letter-spacing:1px;margin-bottom:8px;}
+.wc-pros .wc-pc-title{color:#16a34a;}
+.wc-cons .wc-pc-title{color:#dc2626;}
+.wc-pc-item{font-size:12px;line-height:1.65;margin-bottom:4px;display:flex;gap:6px;}
+.wc-pros .wc-pc-item{color:#166534;}
+.wc-cons .wc-pc-item{color:#991b1b;}
+
+/* 37.三栏卡 */
+.wc-3col{display:flex;gap:8px;margin:0 0 16px;}
+.wc-3c{flex:1;text-align:center;padding:16px 8px;background:#fafafa;border:1px solid var(--rborder);border-top:2px solid var(--red);}
+.wc-3c-icon{font-size:24px;margin-bottom:6px;}
+.wc-3c-title{font-size:13px;font-weight:700;color:var(--g1);margin-bottom:4px;}
+.wc-3c-desc{font-size:11px;color:var(--g4);line-height:1.5;}
+
+/* 38.小红书风格卡片 */
+.wc-xhs{background:linear-gradient(135deg,#fff5f5,#fff);border:1px solid rgba(255,100,100,.2);padding:20px;margin:0 0 16px;position:relative;}
+.wc-xhs-tag{display:inline-block;background:var(--red);color:#fff;font-size:9px;padding:2px 8px;letter-spacing:1px;margin-bottom:10px;}
+.wc-xhs-title{font-size:18px;font-weight:900;color:var(--g1);margin-bottom:8px;line-height:1.3;}
+.wc-xhs-body{font-size:13px;color:var(--g2);line-height:1.75;}
+.wc-xhs-footer{margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,100,100,.15);display:flex;gap:12px;}
+.wc-xhs-stat{font-size:11px;color:var(--g4);}
+.wc-xhs-stat strong{color:var(--red);font-size:13px;}
+
+/* 39.警示条 */
+.wc-stripe{background:repeating-linear-gradient(45deg,#d82821,#d82821 10px,#ff4545 10px,#ff4545 20px);padding:10px 16px;margin:0 0 16px;text-align:center;}
+.wc-stripe-text{color:#fff;font-size:13px;font-weight:700;letter-spacing:2px;text-shadow:0 1px 2px rgba(0,0,0,.3);}
+
+/* 40.数字徽章列表 */
+.wc-badgelist{margin:0 0 16px;}
+.wc-badge-item{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px;}
+.wc-badge-num{flex-shrink:0;min-width:36px;height:24px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 8px;}
+.wc-badge-body{font-size:14px;color:var(--g2);line-height:1.6;padding-top:2px;}
+
+/* ── Modal ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:1000;align-items:center;justify-content:center;}
+.overlay.on{display:flex;}
+.modal{background:#fff;width:540px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-hd{background:#0f0f0f;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.modal-hd-title{color:#fff;font-size:13px;font-weight:600;letter-spacing:1px;}
+.modal-hd-x{background:none;border:none;color:rgba(255,255,255,.35);font-size:16px;cursor:pointer;}
+.modal-hd-x:hover{color:#fff;}
+.modal-bd{padding:16px;}
+.modal-ft{padding:11px 16px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:7px;}
+.fg{margin-bottom:13px;}
+.fg label{display:block;font-size:10px;color:#888;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;}
+.fi,.fta,.fsel{width:100%;border:1px solid #e0e0e0;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;transition:.2s;border-radius:0;}
+.fi:focus,.fta:focus,.fsel:focus{border-color:var(--red);}
+.fta{min-height:66px;resize:vertical;line-height:1.5;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.f3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+.btn-cancel{background:#f5f5f5;border:none;padding:7px 16px;font-family:inherit;cursor:pointer;font-size:12px;}
+.btn-ok{background:var(--red);color:#fff;border:none;padding:7px 16px;font-family:inherit;cursor:pointer;font-size:12px;}
+.btn-ok:hover{background:var(--red2);}
+.add-row{width:100%;border:1px dashed #ddd;background:none;padding:6px;font-size:11px;color:#aaa;cursor:pointer;font-family:inherit;margin-top:4px;}
+.add-row:hover{border-color:var(--red);color:var(--red);}
+.sub-item{background:#f9f9f9;border:1px solid #eee;padding:9px 11px;margin-bottom:6px;}
+.sub-item-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.sub-item-lbl{font-size:10px;color:#aaa;letter-spacing:1px;}
+.rm-btn{background:none;border:none;color:#f87171;cursor:pointer;font-size:12px;}
+.dyn-row{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+.dyn-row .fi{flex:1;}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f0f0f;color:#fff;padding:8px 20px;font-size:12px;letter-spacing:1px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999;border-radius:2px;}
+.toast.on{opacity:1;}
+</style>
+</head>
+<body>
+<aside class="sb">
+  <div class="sb-logo">公众号排版生成器 v3</div>
+  <div class="sb-sec">
+    <div class="sb-sec-lbl">结构</div>
+    <button class="sb-btn" onclick="O('cover')"><span class="ic">🎨</span>封面标题卡片</button>
+    <button class="sb-btn" onclick="O('part')"><span class="ic">📌</span>章节标题 PART</button>
+    <button class="sb-btn" onclick="O('banner')"><span class="ic">🖥️</span>横幅 Banner</button>
+    <button class="sb-btn" onclick="O('divider')"><span class="ic">➖</span>分割线</button>
+    <button class="sb-btn" onclick="O('footer')"><span class="ic">👍</span>互动底栏</button>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-sec-lbl">文字样式</div>
+    <button class="sb-btn" onclick="O('para')"><span class="ic">📝</span>正文段落</button>
+    <button class="sb-btn" onclick="O('hl')"><span class="ic">✨</span>高亮段落（粉底）</button>
+    <button class="sb-btn" onclick="O('em')"><span class="ic">〰️</span>强调文本（红底线）</button>
+    <button class="sb-btn" onclick="O('quote')"><span class="ic">💬</span>引用块</button>
+    <button class="sb-btn" onclick="O('bigquote')"><span class="ic">❝</span>大字引言</button>
+    <button class="sb-btn" onclick="O('gradtitle')"><span class="ic">🌈</span>渐变标题</button>
+    <button class="sb-btn" onclick="O('note')"><span class="ic">📎</span>注释说明</button>
+    <button class="sb-btn" onclick="O('inline')"><span class="ic">🔤</span>行内样式</button>
+    <button class="sb-btn" onclick="O('stripe')"><span class="ic">🚧</span>警示条</button>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-sec-lbl">列表 / 流程</div>
+    <button class="sb-btn" onclick="O('list')"><span class="ic">📋</span>有序列表</button>
+    <button class="sb-btn" onclick="O('dotlist')"><span class="ic">🔵</span>彩色圆点列表</button>
+    <button class="sb-btn" onclick="O('badgelist')"><span class="ic">🏷</span>数字徽章列表</button>
+    <button class="sb-btn" onclick="O('check')"><span class="ic">✅</span>清单 Checklist</button>
+    <button class="sb-btn" onclick="O('steps')"><span class="ic">🪜</span>步骤流程</button>
+    <button class="sb-btn" onclick="O('timeline')"><span class="ic">🕐</span>时间轴</button>
+    <button class="sb-btn" onclick="O('faq')"><span class="ic">❓</span>FAQ 问答</button>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-sec-lbl">数据 / 富媒体</div>
+    <button class="sb-btn" onclick="O('stats')"><span class="ic">📊</span>数据统计</button>
+    <button class="sb-btn" onclick="O('numcard')"><span class="ic">🔢</span>大数字卡</button>
+    <button class="sb-btn" onclick="O('progress')"><span class="ic">📈</span>进度条</button>
+    <button class="sb-btn" onclick="O('rating')"><span class="ic">⭐</span>评分条</button>
+    <button class="sb-btn" onclick="O('3col')"><span class="ic">🧩</span>三栏图标卡</button>
+    <button class="sb-btn" onclick="O('cards')"><span class="ic">🗂️</span>滑动卡片组</button>
+    <button class="sb-btn" onclick="O('proscons')"><span class="ic">⚖️</span>优缺点对比</button>
+    <button class="sb-btn" onclick="O('alert')"><span class="ic">⚠️</span>提示框</button>
+    <button class="sb-btn" onclick="O('prompt')"><span class="ic">⌨️</span>代码/提示词块</button>
+    <button class="sb-btn" onclick="O('callout')"><span class="ic">📣</span>Callout 突出框</button>
+    <button class="sb-btn" onclick="O('xhs')"><span class="ic">📱</span>小红书风格卡片</button>
+    <button class="sb-btn" onclick="O('imgtext')"><span class="ic">🖼️</span>图文横排</button>
+    <button class="sb-btn" onclick="O('tags')"><span class="ic">🏷️</span>标签组</button>
+    <button class="sb-btn" onclick="O('twocol')"><span class="ic">⬜</span>双栏对比</button>
+    <button class="sb-btn" onclick="O('cmp')"><span class="ic">📐</span>横向对比表</button>
+    <button class="sb-btn" onclick="O('kv')"><span class="ic">📒</span>键值信息表</button>
+    <button class="sb-btn" onclick="O('image')"><span class="ic">🖼️</span>图片</button>
+  </div>
+  <div class="sb-foot">
+    <button class="btn-main" onclick="copyAll()">📋 复制全部 · 粘贴到公众号</button>
+    <button class="btn-sub" onclick="clearAll()">清空画布</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="main-lbl">预览 · 点击选中 · 绿色按钮单独复制</div>
+  <div id="canvas"></div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-hd-title" id="mtitle">编辑组件</span>
+      <button class="modal-hd-x" onclick="CM()">✕</button>
+    </div>
+    <div class="modal-bd" id="mbd"></div>
+    <div class="modal-ft">
+      <button class="btn-cancel" onclick="CM()">取消</button>
+      <button class="btn-ok" onclick="submit()">插入 / 更新</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ STATE ═══
+let CT='', CW=null, BS=0;
+const FF=`font-family:'PingFang SC','Helvetica Neue','Microsoft YaHei',sans-serif;`;
+const TITLES={
+  cover:'封面标题卡片',part:'章节标题',banner:'横幅 Banner',divider:'分割线',footer:'互动底栏',
+  para:'正文段落',hl:'高亮段落',em:'强调文本',quote:'引用块',bigquote:'大字引言',
+  gradtitle:'渐变标题',note:'注释说明',inline:'行内样式',stripe:'警示条',
+  list:'有序列表',dotlist:'彩色圆点列表',badgelist:'数字徽章列表',check:'清单',
+  steps:'步骤流程',timeline:'时间轴',faq:'FAQ 问答',
+  stats:'数据统计',numcard:'大数字卡',progress:'进度条',rating:'评分条',
+  '3col':'三栏图标卡',cards:'滑动卡片组',proscons:'优缺点对比',
+  alert:'提示框',prompt:'代码块',callout:'Callout 突出框',
+  xhs:'小红书风格卡片',imgtext:'图文横排',
+  tags:'标签组',twocol:'双栏对比',cmp:'横向对比表',kv:'键值表',image:'图片'
+};
+
+// ═══ MODAL ═══
+function O(type,wrap){
+  CT=type; CW=wrap||null;
+  document.getElementById('mtitle').textContent=TITLES[type]||type;
+  document.getElementById('mbd').innerHTML=FORM(type);
+  document.getElementById('overlay').classList.add('on');
+}
+function CM(){document.getElementById('overlay').classList.remove('on');CW=null;}
+function submit(){
+  const h=BUILD(CT); if(!h) return;
+  const tmp=document.createElement('div'); tmp.innerHTML=h;
+  const el=tmp.firstElementChild;
+  if(CW) CW.replaceWith(el); else {
+    document.getElementById('canvas').appendChild(el);
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  bindAll(); CM();
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')CM();});
+
+// ═══ BIND ═══
+function bindAll(){
+  document.querySelectorAll('.wc-wrap').forEach(w=>{
+    w.onclick=function(e){
+      if(e.target.closest('.blk-bar'))return;
+      document.querySelectorAll('.wc-wrap').forEach(x=>x.classList.remove('sel'));
+      this.classList.add('sel'); e.stopPropagation();
+    };
+  });
+  document.getElementById('canvas').onclick=e=>{
+    if(!e.target.closest('.wc-wrap'))
+      document.querySelectorAll('.wc-wrap').forEach(x=>x.classList.remove('sel'));
+  };
+}
+bindAll();
+
+// ═══ BLOCK OPS ═══
+function mv(id,d){
+  const el=document.getElementById(id); if(!el) return;
+  if(d<0&&el.previousElementSibling) el.parentNode.insertBefore(el,el.previousElementSibling);
+  else if(d>0&&el.nextElementSibling) el.parentNode.insertBefore(el.nextElementSibling,el);
+}
+function dl(id){const el=document.getElementById(id);if(el)el.remove();}
+function ed(id){const w=document.getElementById(id);if(w)O(w.dataset.type,w);}
+
+// ═══ COPY ═══
+function copyBlk(id){
+  const w=document.getElementById(id); if(!w) return;
+  const enc=w.dataset.export||''; if(!enc){toast('无导出内容');return;}
+  richCopy(decodeURIComponent(enc),'✓ 已复制，可直接粘贴到公众号');
+}
+function copyAll(){
+  const parts=[];
+  document.querySelectorAll('#canvas .wc-wrap').forEach(w=>{
+    const enc=w.dataset.export||''; if(enc) parts.push(decodeURIComponent(enc));
+  });
+  if(!parts.length){toast('画布为空');return;}
+  richCopy(parts.join('\n'),'✓ 全部复制成功，可直接粘贴到公众号');
+}
+function richCopy(html,msg){
+  const full=`<html><body>${html}</body></html>`;
+  if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+    navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([full],{type:'text/html'})})])
+      .then(()=>toast(msg)).catch(()=>execCopy(html,msg));
+  } else execCopy(html,msg);
+}
+function execCopy(html,msg){
+  const d=document.createElement('div');
+  d.contentEditable='true';
+  d.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;';
+  d.innerHTML=html; document.body.appendChild(d); d.focus();
+  const s=window.getSelection(),r=document.createRange();
+  r.selectNodeContents(d); s.removeAllRanges(); s.addRange(r);
+  let ok=false; try{ok=document.execCommand('copy');}catch(e){}
+  s.removeAllRanges(); document.body.removeChild(d);
+  ok?toast(msg):toast('请使用 Chrome 浏览器');
+}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('on');
+  setTimeout(()=>el.classList.remove('on'),2600);
+}
+function clearAll(){if(confirm('确认清空？'))document.getElementById('canvas').innerHTML='';}
+
+// ═══ HELPERS ═══
+function gv(id){const e=document.getElementById(id);return e?e.value:'';}
+function uid(){return 'b'+(++BS);}
+function BAR(id){
+  return `<div class="blk-bar">
+    <button onclick="mv('${id}',-1)">↑</button>
+    <button onclick="mv('${id}',1)">↓</button>
+    <button onclick="ed('${id}')">✏</button>
+    <button class="bcp" onclick="copyBlk('${id}')">⎘ 复制</button>
+    <button class="bdl" onclick="dl('${id}')">✕</button>
+  </div>`;
+}
+function WRAP(type,id,preview,exp){
+  return `<div class="wc-wrap" data-type="${type}" id="${id}" data-export="${encodeURIComponent(exp||preview)}">${BAR(id)}${preview}</div>`;
+}
+
+// ─── Dynamic rows ───
+let si=3,pi=3,ci=2,tli=3,kvi=3,cmpi=2,stpi=3,ri=3,dli=3,bli=3,faqi=3,thci=3,prci=3;
+const DR=(v1,v2,rm=true)=>`<div class="dyn-row"><input class="fi" value="${v1}"><input class="fi" value="${v2}">${rm?`<button class="rm-btn" onclick="this.parentElement.remove()">✕</button>`:''}</div>`;
+const DR1=(v,rm=true)=>`<div class="dyn-row"><input class="fi" value="${v}">${rm?`<button class="rm-btn" onclick="this.parentElement.remove()">✕</button>`:''}</div>`;
+const DR3=(v1,v2,v3)=>`<div class="dyn-row"><input class="fi" value="${v1}"><input class="fi" value="${v2}"><input class="fi" value="${v3}"><button class="rm-btn" onclick="this.parentElement.remove()">✕</button></div>`;
+function addStat(){document.getElementById('slist').insertAdjacentHTML('beforeend',DR('',''));}
+function addProg(){document.getElementById('plist').insertAdjacentHTML('beforeend',DR('新指标','50'));}
+function addRating(){document.getElementById('rlist').insertAdjacentHTML('beforeend',DR('项目','8'));}
+function addList(){document.getElementById('llist').insertAdjacentHTML('beforeend',DR1(''));}
+function addCheck(){document.getElementById('clist').insertAdjacentHTML('beforeend',`<div class="dyn-row"><select class="fsel" style="flex:.7"><option value="done">✅ 完成</option><option value="todo">⬜ 待办</option></select><input class="fi" value=""><button class="rm-btn" onclick="this.parentElement.remove()">✕</button></div>`);}
+function addStep(){document.getElementById('stlist').insertAdjacentHTML('beforeend',DR('步骤标题','步骤说明'));}
+function addTl(){document.getElementById('tllist').insertAdjacentHTML('beforeend',`<div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">节点</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="时间" value="2025" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="标题" style="margin-bottom:5px;margin-top:5px;"><input class="fi" placeholder="说明" value="说明" style="margin-top:5px;"></div>`);}
+function addCard(){const i=ci++;document.getElementById('cdlist').insertAdjacentHTML('beforeend',`<div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">卡片 ${i+1}</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="编号" value="ITEM ${String(i+1).padStart(2,'0')}" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="标题" style="margin:5px 0;"><textarea class="fta" rows="3" placeholder="内容">· 内容</textarea></div>`);}
+function addKv(){document.getElementById('kvlist').insertAdjacentHTML('beforeend',DR('键','值'));}
+function addCmp(){const i=cmpi++;document.getElementById('cmplist').insertAdjacentHTML('beforeend',DR3(`行 ${i}`,'✓','✓'));}
+function addTag(){document.getElementById('tglist').insertAdjacentHTML('beforeend',`<div class="dyn-row"><select class="fsel" style="flex:.6"><option value="red">红</option><option value="gray">灰</option><option value="dark">深</option></select><input class="fi" value="标签"><button class="rm-btn" onclick="this.parentElement.remove()">✕</button></div>`);}
+// new
+function addDotItem(){document.getElementById('dllist').insertAdjacentHTML('beforeend',`<div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">条目</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><div class="f2" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="新条目"><input class="fi" placeholder="颜色(hex)" value="#d82821"></div><input class="fi" placeholder="说明文字" value="这里填写详细说明内容。"></div>`);}
+function addBadge(){document.getElementById('bllist').insertAdjacentHTML('beforeend',DR('徽章文字','列表项内容'));}
+function addFaq(){document.getElementById('faqlist').insertAdjacentHTML('beforeend',`<div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">问答</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="问题" value="新问题" style="margin-bottom:5px;"><textarea class="fta" placeholder="答案" rows="2" style="margin-top:5px;">答案内容。</textarea></div>`);}
+function add3Col(){document.getElementById('thclist').insertAdjacentHTML('beforeend',DR3('🔒','标题','说明'));}
+function addPros(){document.getElementById('proslist').insertAdjacentHTML('beforeend',DR1('优点条目'));}
+function addCons(){document.getElementById('conslist').insertAdjacentHTML('beforeend',DR1('缺点条目'));}
+// ═══ FORMS ═══
+function FORM(t){
+  switch(t){
+    case 'cover':return `
+      <div class="fg"><label>品牌标签（左上）</label><input class="fi" id="f-brand" value="OpenClaw · 安全教程"></div>
+      <div class="fg"><label>右上文字</label><input class="fi" id="f-year" value="2026"></div>
+      <div class="fg"><label>划掉副标题</label><input class="fi" id="f-sub" value="提示词注入？安全漏洞？"></div>
+      <div class="fg"><label>主标题</label><input class="fi" id="f-h1" value="🦞 小龙虾这么多问题？"></div>
+      <div class="fg"><label>红色大字（斜体）</label><input class="fi" id="f-h2" value="先做好这3件事！"></div>
+      <div class="fg"><label>副说明</label><input class="fi" id="f-desc" value="不能因为风险放弃进步。"></div>
+      <div class="fg"><label>封面图片（点击上传）</label>
+        <div id="cv-prev" onclick="document.getElementById('cv-inp').click()" style="width:90px;height:90px;background:#f5f5f5;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#bbb;overflow:hidden;">点击上传</div>
+        <input type="file" id="cv-inp" accept="image/*" style="display:none;" onchange="pcv(this)">
+        <input type="hidden" id="f-cimg" value="">
+      </div>
+      <div class="f2">
+        <div class="fg"><label>底栏文字</label><input class="fi" id="f-ftxt" value="科技 · 赋能 · 剖析"></div>
+        <div class="fg"><label>底栏标签（逗号分隔）</label><input class="fi" id="f-ftags" value="教程,评论,解读"></div>
+      </div>`;
+    case 'part':return `
+      <div class="f2">
+        <div class="fg"><label>编号</label><input class="fi" id="f-num" value="01"></div>
+        <div class="fg"><label>小标签</label><input class="fi" id="f-plbl" value="PART"></div>
+      </div>
+      <div class="fg"><label>标题</label><input class="fi" id="f-ptitle" value="三大要素直接喂"></div>
+      <div class="fg"><label>副标题</label><input class="fi" id="f-psub" value="OpenClaw · 配置思路"></div>`;
+    case 'banner':return `
+      <div class="fg"><label>小标签文字</label><input class="fi" id="f-btag" value="SECURITY GUIDE"></div>
+      <div class="fg"><label>主标题</label><input class="fi" id="f-btitle" value="安装好OpenClaw之后你要立刻做的三件事"></div>
+      <div class="fg"><label>副说明</label><input class="fi" id="f-bdesc" value="不能因为风险放弃进步，但要学会保护自己。"></div>`;
+    case 'para':return `<div class="fg"><label>段落文字</label><textarea class="fta" id="f-txt" rows="5">作为一款新生工具，他的权限很高，他的能力很强，必然的带来风险，但是这些风险是可以管控的。</textarea></div>`;
+    case 'hl':return `<div class="fg"><label>高亮内容（粉底加粗）</label><textarea class="fta" id="f-txt" rows="4">先说结论：风险是实实在在的，但是也是可以解决的。</textarea></div>`;
+    case 'em':return `
+      <div class="fg"><label>前置普通文字</label><input class="fi" id="f-pre" value="这些风险是"></div>
+      <div class="fg"><label>强调文字（橙色底线）</label><input class="fi" id="f-em" value="可以管控"></div>
+      <div class="fg"><label>后置普通文字</label><input class="fi" id="f-post" value="的，关键在于你有没有正确配置。"></div>`;
+    case 'quote':return `
+      <div class="fg"><label>引用内容</label><textarea class="fta" id="f-txt" rows="4">工具本身没有对错，我们要学会驾驭工具。</textarea></div>
+      <div class="fg"><label>来源（可空）</label><input class="fi" id="f-src" value=""></div>`;
+    case 'note':return `<div class="fg"><label>注释内容（灰色小字）</label><textarea class="fta" id="f-txt" rows="3">* 以上数据来源于国家网络安全中心 2025 年度安全报告，仅供参考。</textarea></div>`;
+    case 'inline':return `
+      <div class="fg"><label>前置文字</label><input class="fi" id="f-pre" value="请在终端运行"></div>
+      <div class="fg"><label>行内样式类型</label>
+        <select class="fsel" id="f-itype">
+          <option value="code">代码（灰底红字）</option>
+          <option value="tip">提示标签（黄底）</option>
+          <option value="bred">红色加粗</option>
+        </select>
+      </div>
+      <div class="fg"><label>行内文字</label><input class="fi" id="f-itxt" value="openclaw onboard"></div>
+      <div class="fg"><label>后置文字</label><input class="fi" id="f-post" value="命令重置配置。"></div>`;
+    case 'list':return `
+      <div id="llist">
+        ${DR1('IM 网关可伪造消息绕过认证')}${DR1('多轮对话可篡改 AI 行为模式')}${DR1('执行层直连 OS，存在被控风险')}
+      </div>
+      <button class="add-row" onclick="addList()">＋ 添加列表项</button>`;
+    case 'check':return `
+      <div id="clist">
+        <div class="dyn-row"><select class="fsel" style="flex:.7"><option value="done">✅ 完成</option><option value="todo">⬜ 待办</option></select><input class="fi" value="修改默认端口和访问权限"></div>
+        <div class="dyn-row"><select class="fsel" style="flex:.7"><option value="done">✅ 完成</option><option value="todo">⬜ 待办</option></select><input class="fi" value="禁用公网访问，仅本地访问"></div>
+        <div class="dyn-row"><select class="fsel" style="flex:.7"><option value="todo">⬜ 待办</option><option value="done">✅ 完成</option></select><input class="fi" value="配置 API 密钥加密存储"></div>
+      </div>
+      <button class="add-row" onclick="addCheck()">＋ 添加条目</button>`;
+    case 'steps':return `
+      <div id="stlist">
+        ${DR('安装 OpenClaw','按照官方文档完成基础安装和初始化配置')}
+        ${DR('运行安全检查','输入 PROMPT 1 让 AI 自检安全漏洞并修复')}
+        ${DR('设置防误删规则','输入 PROMPT 2 开启操作确认和回收站模式')}
+      </div>
+      <button class="add-row" onclick="addStep()">＋ 添加步骤</button>`;
+    case 'timeline':return `
+      <div id="tllist">
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">节点</span></div><input class="fi" placeholder="时间" value="2024.01" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="发布 v1.0" style="margin:5px 0;"><input class="fi" placeholder="说明" value="OpenClaw 首个公开版本，社区迅速增长至万人。"></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">节点</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="时间" value="2024.06" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="安全通报" style="margin:5px 0;"><input class="fi" placeholder="说明" value="国家网络安全中心首次发布安全风险通告。"></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">节点</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="时间" value="2025.03" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="漏洞高峰" style="margin:5px 0;"><input class="fi" placeholder="说明" value="单季度披露漏洞数量突破 80 个，超危漏洞 12 个。"></div>
+      </div>
+      <button class="add-row" onclick="addTl()">＋ 添加节点</button>`;
+    case 'alert':return `
+      <div class="fg"><label>类型</label><select class="fsel" id="f-atype"><option value="danger">🚨 危险</option><option value="warning">⚠️ 警告</option><option value="info">ℹ️ 信息</option><option value="success">✅ 成功</option></select></div>
+      <div class="fg"><label>标题</label><input class="fi" id="f-atitle" value="危险！危险！危险！"></div>
+      <div class="fg"><label>内容</label><textarea class="fta" id="f-atxt" rows="3">部署过程中需要用到大模型密钥，请勿向第三方安装人员泄露！</textarea></div>`;
+    case 'prompt':return `
+      <div class="fg"><label>标签文字</label><input class="fi" id="f-ptag" value="PROMPT 1 · token优化 · 防提示词注入"></div>
+      <div class="fg"><label>内容</label><textarea class="fta" id="f-pctnt" rows="5">第一：为了节省token，你要部署一些能够节省token的技能，又不影响输出质量。并且要边用边优化！第二：检查一下自身的安全漏洞，有没有提示词注入风险，有的话抓紧修复！</textarea></div>`;
+    case 'callout':return `
+      <div class="f2">
+        <div class="fg"><label>图标</label><input class="fi" id="f-cicon" value="💡"></div>
+        <div class="fg"><label>标题</label><input class="fi" id="f-ctitle" value="核心结论"></div>
+      </div>
+      <div class="fg"><label>内容</label><textarea class="fta" id="f-cbody" rows="3">风险是实实在在的，但通过正确配置完全可以管控。不要因噎废食。</textarea></div>`;
+    case 'stats':return `
+      <div id="slist">
+        ${DR('258','历史漏洞')}${DR('85%','公网暴露')}${DR('10.8%','恶意插件')}
+      </div>
+      <button class="add-row" onclick="addStat()">＋ 添加数据项</button>`;
+    case 'numcard':return `
+      <div class="f2">
+        <div class="fg"><label>大数字</label><input class="fi" id="f-nn" value="258"></div>
+        <div class="fg"><label>单位</label><input class="fi" id="f-nu" value="个"></div>
+      </div>
+      <div class="fg"><label>标题</label><input class="fi" id="f-ntitle" value="历史披露漏洞总数"></div>
+      <div class="fg"><label>说明</label><input class="fi" id="f-ndesc" value="其中超危漏洞 12 个，高危漏洞 21 个，利用难度普遍较低。"></div>`;
+    case 'progress':return `
+      <div id="plist">
+        ${DR('架构风险','85')}${DR('默认配置','70')}${DR('漏洞数量','60')}
+      </div>
+      <button class="add-row" onclick="addProg()">＋ 添加条目</button>`;
+    case 'rating':return `
+      <div id="rlist">
+        ${DR('安全性','3')}${DR('易用性','9')}${DR('功能性','9')}
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:4px;">满分 10 分</p>
+      <button class="add-row" onclick="addRating()">＋ 添加评分项</button>`;
+    case 'cards':return `
+      <div class="fg"><label>顶栏左侧文字</label><input class="fi" id="f-clbl" value="OpenClAW 🦞"></div>
+      <div id="cdlist">
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">卡片 01（首卡·红色）</span></div><input class="fi" placeholder="编号" value="RISK 01" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="架构设计缺陷" style="margin:5px 0;"><textarea class="fta" rows="4">· IM 网关可伪造消息绕过认证
+· 多轮对话可篡改 AI 行为模式
+· 执行层直连 OS，存在被控风险
+· 恶意插件可批量感染用户设备</textarea></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">卡片 02</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="编号" value="RISK 02" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="默认配置高危" style="margin:5px 0;"><textarea class="fta" rows="4">· 默认绑定 0.0.0.0:18789
+· 远程访问无需任何认证
+· 密钥 / 记录明文存储
+· 公网暴露比例高达 85%</textarea></div>
+      </div>
+      <button class="add-row" onclick="addCard()">＋ 添加卡片</button>`;
+    case 'divider':return `<div class="fg"><label>中间文字（可空）</label><input class="fi" id="f-dtxt" value="· · ·"></div>`;
+    case 'footer':return `
+      <div class="f3">
+        <div class="fg"><label>按钮1</label><input class="fi" id="f-b1" value="点赞"></div>
+        <div class="fg"><label>按钮2</label><input class="fi" id="f-b2" value="在看"></div>
+        <div class="fg"><label>按钮3（高亮）</label><input class="fi" id="f-b3" value="分享"></div>
+      </div>`;
+    case 'tags':return `
+      <div id="tglist">
+        <div class="dyn-row"><select class="fsel" style="flex:.6"><option value="red">红</option><option value="gray">灰</option><option value="dark">深</option></select><input class="fi" value="架构缺陷"></div>
+        <div class="dyn-row"><select class="fsel" style="flex:.6"><option value="red">红</option><option value="gray">灰</option><option value="dark">深</option></select><input class="fi" value="供应链风险"></div>
+        <div class="dyn-row"><select class="fsel" style="flex:.6"><option value="gray" selected>灰</option><option value="red">红</option><option value="dark">深</option></select><input class="fi" value="已修复"></div>
+      </div>
+      <button class="add-row" onclick="addTag()">＋ 添加标签</button>`;
+    case 'twocol':return `
+      <div class="fg"><label>左栏标题</label><input class="fi" id="f-lt" value="❌ 错误做法"></div>
+      <div class="fg"><label>左栏内容</label><textarea class="fta" id="f-lb" rows="3">直接暴露公网，不配置任何认证，使用默认端口，API密钥明文写入配置文件。</textarea></div>
+      <div class="fg"><label>右栏标题</label><input class="fi" id="f-rt" value="✅ 正确做法"></div>
+      <div class="fg"><label>右栏内容</label><textarea class="fta" id="f-rb" rows="3">仅允许本地访问，启用访问认证，修改默认端口，使用环境变量管理密钥。</textarea></div>`;
+    case 'cmp':return `
+      <div class="fg"><label>第一列标题（特性）</label><input class="fi" id="f-ch0" value="特性"></div>
+      <div class="f2">
+        <div class="fg"><label>第二列标题</label><input class="fi" id="f-ch1" value="OpenClaw"></div>
+        <div class="fg"><label>第三列标题</label><input class="fi" id="f-ch2" value="竞品 A"></div>
+      </div>
+      <div id="cmplist">
+        ${DR3('开源免费','✓','✗')}${DR3('本地部署','✓','✓')}${DR3('安全审计','✗','✓')}
+      </div>
+      <button class="add-row" onclick="addCmp()">＋ 添加行</button>`;
+    case 'kv':return `
+      <div id="kvlist">
+        ${DR('默认端口','18789，建议修改为随机高位端口')}
+        ${DR('认证方式','默认无认证，需手动配置 Token')}
+        ${DR('密钥存储','明文，建议改为加密环境变量')}
+      </div>
+      <button class="add-row" onclick="addKv()">＋ 添加键值对</button>`;
+    case 'bigquote':return `
+      <div class="fg"><label>大字引言内容</label><textarea class="fta" id="f-bqtxt" rows="3">威胁的不是你的年龄，而是你的经验有没有被用上。</textarea></div>
+      <div class="fg"><label>落款 / 副标题（可空）</label><input class="fi" id="f-bqsub" value="— AI 时代的重新洗牌"></div>`;
+    case 'gradtitle':return `
+      <div class="fg"><label>主标题（渐变色）</label><input class="fi" id="f-gtmain" value="先做好这三件事"></div>
+      <div class="fg"><label>副标题</label><input class="fi" id="f-gtsub" value="安装 OpenClaw 后的安全必修课"></div>`;
+    case 'stripe':return `
+      <div class="fg"><label>警示文字</label><input class="fi" id="f-strtxt" value="⚠️ 重要安全提示 · 请务必仔细阅读 ⚠️"></div>`;
+    case 'dotlist':return `
+      <div id="dllist">
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">条目 1</span></div><div class="f2" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="架构设计缺陷"><input class="fi" placeholder="颜色(hex)" value="#d82821"></div><input class="fi" placeholder="说明" value="IM 网关层可被伪造消息绕过身份认证，执行层与操作系统直接交互存在被完全控制风险。"></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">条目 2</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><div class="f2" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="默认配置高危"><input class="fi" placeholder="颜色(hex)" value="#e2561b"></div><input class="fi" placeholder="说明" value="默认绑定公网地址，远程访问无需认证，公网暴露比例高达 85%。"></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">条目 3</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><div class="f2" style="margin-bottom:5px;"><input class="fi" placeholder="标题" value="供应链投毒"><input class="fi" placeholder="颜色(hex)" value="#2563eb"></div><input class="fi" placeholder="说明" value="10.8% 的技能插件包含恶意代码，攻击者可远程修改 AI 执行逻辑。"></div>
+      </div>
+      <button class="add-row" onclick="addDotItem()">＋ 添加条目</button>`;
+    case 'badgelist':return `
+      <div id="bllist">
+        ${DR('STEP 01','安装完成后立刻修改默认端口，关闭公网访问')}
+        ${DR('STEP 02','将 API 密钥从明文配置迁移到环境变量')}
+        ${DR('STEP 03','定期检查已安装的技能插件来源和权限')}
+      </div>
+      <button class="add-row" onclick="addBadge()">＋ 添加条目</button>`;
+    case 'faq':return `
+      <div id="faqlist">
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">问答 1</span></div><input class="fi" placeholder="问题" value="OpenClaw 真的有那么多安全问题吗？" style="margin-bottom:5px;"><textarea class="fta" placeholder="答案" rows="2" style="margin-top:5px;">风险是真实存在的，但通过正确配置完全可以管控。不要因噎废食，关键是学会正确使用。</textarea></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">问答 2</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="问题" value="网上花钱安装 OpenClaw 安全吗？" style="margin-bottom:5px;"><textarea class="fta" placeholder="答案" rows="2" style="margin-top:5px;">非常危险！部署过程中需要填写大模型 API 密钥，若安装人员获取该密钥，账单将持续被盗用。</textarea></div>
+        <div class="sub-item"><div class="sub-item-hd"><span class="sub-item-lbl">问答 3</span><button class="rm-btn" onclick="this.closest('.sub-item').remove()">✕</button></div><input class="fi" placeholder="问题" value="配置文件被篡改怎么办？" style="margin-bottom:5px;"><textarea class="fta" placeholder="答案" rows="2" style="margin-top:5px;">对核心配置文件进行哈希校验和多重备份，每次启动时自检，发现异常立即关闭服务。</textarea></div>
+      </div>
+      <button class="add-row" onclick="addFaq()">＋ 添加问答</button>`;
+    case '3col':return `
+      <div id="thclist">
+        ${DR3('🛡️','修改默认配置','关闭公网、改端口、加认证')}
+        ${DR3('🔑','密钥安全','使用环境变量，禁止明文存储')}
+        ${DR3('🔍','定期检查','审计插件来源和运行权限')}
+      </div>
+      <button class="add-row" onclick="add3Col()">＋ 添加列</button>`;
+    case 'proscons':return `
+      <div class="f2">
+        <div class="fg"><label>优点列标题</label><input class="fi" id="f-protitle" value="✅ 优点"></div>
+        <div class="fg"><label>缺点列标题</label><input class="fi" id="f-contitle" value="❌ 缺点"></div>
+      </div>
+      <div class="fg"><label>优点（每行一条）</label>
+        <div id="proslist">
+          ${DR1('开源免费，社区活跃')}${DR1('自然语言交互，学习成本低')}${DR1('功能强大，支持本地部署')}
+        </div>
+        <button class="add-row" onclick="addPros()">＋ 添加优点</button>
+      </div>
+      <div class="fg"><label>缺点（每行一条）</label>
+        <div id="conslist">
+          ${DR1('默认配置存在安全风险')}${DR1('历史漏洞数量较多')}${DR1('插件生态存在投毒风险')}
+        </div>
+        <button class="add-row" onclick="addCons()">＋ 添加缺点</button>
+      </div>`;
+    case 'xhs':return `
+      <div class="fg"><label>顶部小标签</label><input class="fi" id="f-xhstag" value="安全指南"></div>
+      <div class="fg"><label>标题</label><input class="fi" id="f-xhstitle" value="安装 OpenClaw 后你必须做的3件事 🦞"></div>
+      <div class="fg"><label>正文内容</label><textarea class="fta" id="f-xhsbody" rows="5">✅ 第一件事：修改默认端口，关闭公网访问
+✅ 第二件事：把 API 密钥从配置文件移到环境变量  
+✅ 第三件事：给核心配置文件做哈希校验和备份
+
+不能因为风险就放弃进步，但要学会保护自己！</textarea></div>
+      <div class="f3">
+        <div class="fg"><label>数据1（数字）</label><input class="fi" id="f-xhs1n" value="3.2k"></div>
+        <div class="fg"><label>数据1（说明）</label><input class="fi" id="f-xhs1l" value="收藏"></div>
+        <div class="fg"><label>（可空）</label><input class="fi" id="f-xhsmore" value="· 已帮助 1.2k 人安全使用"></div>
+      </div>`;
+    case 'imgtext':return `
+      <div class="fg"><label>图片（点击上传）</label>
+        <div id="it-prev" onclick="document.getElementById('it-inp').click()" style="width:80px;height:80px;background:#f5f5f5;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#bbb;overflow:hidden;border-radius:6px;">点击上传</div>
+        <input type="file" id="it-inp" accept="image/*" style="display:none;" onchange="pitImg(this)">
+        <input type="hidden" id="f-itsrc" value="">
+      </div>
+      <div class="fg"><label>标题</label><input class="fi" id="f-ittitle" value="OpenClaw 安全指南"></div>
+      <div class="fg"><label>内容</label><textarea class="fta" id="f-itbody" rows="3">这是一款功能强大的 AI 智能体工具，通过正确配置可以大幅提升你的工作效率，同时保障使用安全。</textarea></div>`;
+    case 'image':return `
+      <div class="fg"><label>图片说明（可空）</label><input class="fi" id="f-icap" value=""></div>
+      <div style="font-size:11px;color:#aaa;text-align:center;padding:10px;background:#f9f9f9;border:1px dashed #ddd;">插入后点击图片区域上传</div>`;
+    default:return '';
+  }
+}
+
+// ═══ BUILD ═══
+function BUILD(t){
+  const id=uid();
+  switch(t){
+
+    case 'cover':{
+      const tags_p=gv('f-ftags').split(',').map(s=>`<span class="wc-cv-tag">${s.trim()}</span>`).join('');
+      const tags_e=gv('f-ftags').split(',').map(s=>`<span style="margin:0;padding:1px 6px;outline:0;background:rgba(255,255,255,.2);border-radius:3px;font-size:8px;color:#fff;box-sizing:border-box;overflow-wrap:break-word;"><span style="margin:0;padding:0;">${s.trim()}</span></span>`).join('');
+      const src=gv('f-cimg');
+      const imgP=src?`<div class="wc-cv-img"><img src="${src}"></div>`:`<div class="wc-cv-img">🖼️</div>`;
+      const imgE=src?`<img src="${src}" style="width:117px;height:auto;border-radius:12px;display:block;" />`:`<div style="width:117px;height:117px;background:rgba(239,112,96,.1);border-radius:12px;"></div>`;
+      const prev=`<div class="wc-cover"><div class="wc-cv-body"><div class="wc-cv-meta"><div class="wc-cv-brand">${gv('f-brand')}</div><div class="wc-cv-year">${gv('f-year')}</div></div><div class="wc-cv-row"><div class="wc-cv-text"><div class="wc-cv-del">${gv('f-sub')}</div><div class="wc-cv-h1">${gv('f-h1')}</div><div class="wc-cv-h2">${gv('f-h2')}</div><div class="wc-cv-bar"></div><div class="wc-cv-desc">${gv('f-desc')}</div></div>${imgP}</div></div><div class="wc-cv-foot"><div class="wc-cv-ftxt">${gv('f-ftxt')}</div><div class="wc-cv-tags">${tags_p}</div></div></div>`;
+      const exp=`<section style="margin:0 0 26px;padding:0;border:1px solid rgba(192,0,0,.15);overflow:hidden;box-shadow:rgba(0,0,0,.06) 0 4px 20px;${FF}"><section style="padding:20px 24px 14px;box-sizing:border-box;"><section style="display:table;width:100%;margin-bottom:22px;"><span style="display:table-cell;font-size:11px;letter-spacing:3px;color:#d82821;${FF}">${gv('f-brand')}</span><span style="display:table-cell;text-align:right;font-size:10px;color:#d1d5db;${FF}">${gv('f-year')}</span></section><section style="display:table;width:100%;"><section style="display:table-cell;vertical-align:middle;"><p style="margin:0 0 4px;font-size:14px;color:#d1d5db;text-decoration:line-through;${FF}">${gv('f-sub')}</p><p style="margin:0;${FF}"><span style="font-size:19px;font-weight:900;color:#111827;${FF}">${gv('f-h1')}</span></p><p style="margin:0 0 10px;font-size:26px;color:#d82821;font-weight:900;font-style:italic;${FF}">${gv('f-h2')}</p><div style="width:44px;height:3px;background:linear-gradient(to right,#d82821,#ff4545);margin-bottom:10px;"></div><p style="margin:0;font-size:13px;color:#9ca3af;${FF}">${gv('f-desc')}</p></section><section style="display:table-cell;vertical-align:middle;width:140px;text-align:center;"><div style="width:140px;height:140px;padding:10px;background:rgba(239,112,96,.1);border-radius:20px;display:inline-block;box-sizing:border-box;text-align:center;line-height:120px;">${imgE}</div></section></section></section><section style="padding:10px 16px;background:linear-gradient(135deg,#d82821,#ff4545);display:table;width:100%;box-sizing:border-box;"><span style="display:table-cell;vertical-align:middle;font-size:12px;color:rgba(255,255,255,.9);letter-spacing:.5px;${FF}">${gv('f-ftxt')}</span><section style="display:table-cell;vertical-align:middle;text-align:right;">${tags_e}</section></section></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'part':{
+      const prev=`<div class="wc-part"><div class="wc-pt-num"><div class="wc-pt-big">${gv('f-num')}</div><div class="wc-pt-lbl">${gv('f-plbl')}</div></div><div class="wc-pt-div"></div><div><div class="wc-pt-title">${gv('f-ptitle')}</div><div class="wc-pt-sub">${gv('f-psub')}</div></div></div>`;
+      const exp=`<section style="display:table;width:100%;margin:18px 0 12px;${FF}"><section style="display:table-cell;vertical-align:middle;text-align:center;width:42px;"><div style="font-size:26px;color:#d82821;line-height:1;letter-spacing:-2px;font-weight:900;${FF}">${gv('f-num')}</div><div style="font-size:8px;letter-spacing:2px;color:#9ca3af;${FF}">${gv('f-plbl')}</div></section><section style="display:table-cell;vertical-align:middle;width:14px;padding:0 6px;border-left:1px solid rgba(229,231,235,.8);border-right:none;"></section><section style="display:table-cell;vertical-align:middle;"><div style="font-size:16px;color:#111827;font-weight:700;letter-spacing:.3px;margin-bottom:2px;${FF}">${gv('f-ptitle')}</div><div style="font-size:11px;color:#9ca3af;letter-spacing:1.5px;${FF}">${gv('f-psub')}</div></section></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'banner':{
+      const prev=`<div class="wc-banner"><div class="wc-banner-tag">${gv('f-btag')}</div><div class="wc-banner-title">${gv('f-btitle')}</div><div class="wc-banner-desc">${gv('f-bdesc')}</div></div>`;
+      const exp=`<section style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:22px 24px;margin:0 0 16px;max-width:100%;box-sizing:border-box;${FF}"><div style="font-size:10px;letter-spacing:3px;color:#d82821;margin-bottom:8px;text-transform:uppercase;${FF}">${gv('f-btag')}</div><div style="font-size:22px;font-weight:900;color:#fff;line-height:1.3;margin-bottom:6px;${FF}">${gv('f-btitle')}</div><div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6;${FF}">${gv('f-bdesc')}</div></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'para':{
+      const txt=gv('f-txt').replace(/\n/g,'<br>');
+      return WRAP(t,id,`<p class="wc-para">${txt}</p>`,`<p style="font-size:15px;color:#1a1a1a;line-height:1.75;margin:0 0 14px;letter-spacing:.3px;text-align:justify;${FF}">${txt}</p>`);}
+
+    case 'hl':{
+      const txt=gv('f-txt').replace(/\n/g,'<br>');
+      return WRAP(t,id,`<div class="wc-hl">${txt}</div>`,`<div style="background:linear-gradient(120deg,#fab4b4 0%,rgba(255,255,255,0) 100%);padding:12px 16px;margin:0 0 16px;font-size:15px;color:#111827;line-height:1.7;font-weight:700;border-radius:2px;${FF}">${txt}</div>`);}
+
+    case 'em':{
+      const pre=gv('f-pre'),em=gv('f-em'),post=gv('f-post');
+      return WRAP(t,id,
+        `<p class="wc-em-wrap">${pre}<span class="wc-em">${em}</span>${post}</p>`,
+        `<p style="font-size:15px;color:#1a1a1a;line-height:1.75;margin:0 0 14px;letter-spacing:.3px;text-align:justify;${FF}">${pre}<span style="font-size:15px;font-style:italic;font-weight:700;color:#e2561b;border-bottom:3px solid #fab4b4;${FF}">${em}</span>${post}</p>`);}
+
+    case 'quote':{
+      const txt=gv('f-txt').replace(/\n/g,'<br>'),src=gv('f-src');
+      const sp=src?`<div class="wc-quote-src">—— ${src}</div>`:'';
+      const se=src?`<div style="font-size:12px;color:#9ca3af;margin-top:6px;${FF}">—— ${src}</div>`:'';
+      return WRAP(t,id,`<div class="wc-quote">${txt}${sp}</div>`,
+        `<div style="border-left:4px solid #d82821;background:rgba(216,40,33,.08);padding:13px 17px;margin:0 0 16px;font-size:15px;color:#374151;line-height:1.7;font-style:italic;${FF}">${txt}${se}</div>`);}
+
+    case 'note':{
+      const txt=gv('f-txt').replace(/\n/g,'<br>');
+      return WRAP(t,id,`<div class="wc-note">${txt}</div>`,
+        `<div style="font-size:12px;color:#9ca3af;border-left:2px solid #e5e7eb;padding:4px 10px;margin:0 0 14px;line-height:1.6;font-style:italic;${FF}">${txt}</div>`);}
+
+    case 'inline':{
+      const pre=gv('f-pre'),itxt=gv('f-itxt'),post=gv('f-post'),itype=gv('f-itype');
+      let prev_span,exp_span;
+      if(itype==='code'){
+        prev_span=`<span class="wc-code">${itxt}</span>`;
+        exp_span=`<span style="display:inline-block;background:#f3f4f6;border:1px solid #e5e7eb;color:#b91c1c;font-size:13px;padding:1px 8px;border-radius:3px;font-family:monospace;margin:0 2px;">${itxt}</span>`;
+      } else if(itype==='tip'){
+        prev_span=`<span class="wc-tip">${itxt}</span>`;
+        exp_span=`<span style="display:inline-block;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#92400e;font-size:12px;padding:2px 10px;border-radius:3px;margin:0 3px;${FF}">${itxt}</span>`;
+      } else {
+        prev_span=`<span class="wc-br">${itxt}</span>`;
+        exp_span=`<span style="color:#d82821;font-weight:700;">${itxt}</span>`;
+      }
+      return WRAP(t,id,
+        `<p class="wc-para">${pre}${prev_span}${post}</p>`,
+        `<p style="font-size:15px;color:#1a1a1a;line-height:1.75;margin:0 0 14px;letter-spacing:.3px;${FF}">${pre}${exp_span}${post}</p>`);}
+
+    case 'list':{
+      const rows=[...document.querySelectorAll('#llist .dyn-row input')];
+      const items_p=rows.map((r,i)=>`<li class="wc-li"><span class="wc-li-n">${i+1}</span><span>${r.value}</span></li>`).join('');
+      const items_e=rows.map((r,i)=>`<tr><td style="padding:8px 0;${i<rows.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':''}vertical-align:top;width:32px;"><div style="width:22px;height:22px;background:#d82821;color:#fff;font-size:11px;font-weight:700;border-radius:50%;text-align:center;line-height:22px;${FF}">${i+1}</div></td><td style="padding:8px 0 8px 10px;${i<rows.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':''}font-size:14px;color:#374151;line-height:1.6;${FF}">${r.value}</td></tr>`).join('');
+      return WRAP(t,id,`<ul class="wc-list">${items_p}</ul>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">${items_e}</table>`);}
+
+    case 'check':{
+      const rows=[...document.querySelectorAll('#clist .dyn-row')];
+      const items_p=rows.map(r=>{const s=r.querySelector('select').value,v=r.querySelector('input').value;return `<div class="wc-check-item"><div class="wc-check-box ${s}">${s==='done'?'✓':''}</div><span>${v}</span></div>`;}).join('');
+      const items_e=rows.map((r,i)=>{const s=r.querySelector('select').value,v=r.querySelector('input').value;const bs=s==='done'?'background:#d82821;color:#fff;':'background:#f3f4f6;border:1px solid rgba(216,40,33,.25);';const bb=i<rows.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':'';return `<tr><td style="padding:8px 0;${bb}vertical-align:top;width:26px;"><div style="width:18px;height:18px;border-radius:3px;text-align:center;line-height:18px;font-size:11px;${bs}${FF}">${s==='done'?'✓':''}</div></td><td style="padding:8px 0 8px 10px;${bb}font-size:14px;color:#374151;line-height:1.6;${FF}">${v}</td></tr>`;}).join('');
+      return WRAP(t,id,`<div class="wc-check">${items_p}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">${items_e}</table>`);}
+
+    case 'steps':{
+      const rows=[...document.querySelectorAll('#stlist .dyn-row')];
+      const items_p=rows.map((r,i)=>{const ins=r.querySelectorAll('input');return `<div class="wc-step"><div class="wc-step-left"><div class="wc-step-n">${i+1}</div><div class="wc-step-line"></div></div><div class="wc-step-right"><div class="wc-step-title">${ins[0]?.value||''}</div><div class="wc-step-body">${ins[1]?.value||''}</div></div></div>`;}).join('');
+      const items_e=rows.map((r,i)=>{const ins=r.querySelectorAll('input');const bb=i<rows.length-1?'border-bottom:1px solid rgba(216,40,33,.12);':'';return `<tr><td style="vertical-align:top;width:38px;padding:0 0 16px;text-align:center;"><div style="width:28px;height:28px;border-radius:50%;background:#d82821;color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:28px;margin:0 auto;${FF}">${i+1}</div></td><td style="padding:4px 0 16px 14px;vertical-align:top;${bb}"><div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:3px;${FF}">${ins[0]?.value||''}</div><div style="font-size:13px;color:#6b7280;line-height:1.6;${FF}">${ins[1]?.value||''}</div></td></tr>`;}).join('');
+      return WRAP(t,id,`<div class="wc-steps">${items_p}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">${items_e}</table>`);}
+
+    case 'timeline':{
+      const items=[...document.querySelectorAll('#tllist .sub-item')];
+      const nodes_p=items.map(el=>{const ins=el.querySelectorAll('input');return `<div class="wc-tl-item"><div class="wc-tl-dot"></div><div class="wc-tl-time">${ins[0]?.value||''}</div><div class="wc-tl-title">${ins[1]?.value||''}</div><div class="wc-tl-body">${ins[2]?.value||''}</div></div>`;}).join('');
+      const nodes_e=items.map(el=>{const ins=el.querySelectorAll('input');return `<tr><td style="width:60px;vertical-align:top;padding:0 14px 16px 0;text-align:right;"><div style="font-size:11px;color:#9ca3af;letter-spacing:1px;padding-top:2px;${FF}">${ins[0]?.value||''}</div></td><td style="width:14px;vertical-align:top;text-align:center;padding-bottom:16px;"><div style="width:10px;height:10px;border-radius:50%;background:#d82821;border:2px solid #fff;box-shadow:0 0 0 2px #d82821;margin:2px auto 0;"></div></td><td style="vertical-align:top;padding:0 0 16px 14px;"><div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:2px;${FF}">${ins[1]?.value||''}</div><div style="font-size:13px;color:#6b7280;line-height:1.6;${FF}">${ins[2]?.value||''}</div></td></tr>`;}).join('');
+      return WRAP(t,id,`<div class="wc-tl">${nodes_p}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">${nodes_e}</table>`);}
+
+    case 'alert':{
+      const IC={danger:'🚨',warning:'⚠️',info:'ℹ️',success:'✅'};
+      const CL={danger:{bg:'rgba(248,113,113,.1)',bd:'rgba(248,113,113,.35)',c:'#b91c1c'},warning:{bg:'rgba(251,191,36,.1)',bd:'rgba(251,191,36,.4)',c:'#92400e'},info:{bg:'rgba(59,130,246,.08)',bd:'rgba(59,130,246,.25)',c:'#1e40af'},success:{bg:'rgba(34,197,94,.08)',bd:'rgba(34,197,94,.25)',c:'#166534'}};
+      const at=gv('f-atype'),cl=CL[at],title=gv('f-atitle'),body=gv('f-atxt').replace(/\n/g,'<br>');
+      const prev=`<div class="wc-alert ${at}"><div class="wc-alert-ic">${IC[at]}</div><div><div class="wc-alert-t">${title}</div><div class="wc-alert-b">${body}</div></div></div>`;
+      const exp=`<section style="padding:12px 15px;margin:0 0 16px;background:${cl.bg};border:1px solid ${cl.bd};display:table;width:100%;box-sizing:border-box;${FF}"><span style="display:table-cell;vertical-align:top;font-size:16px;width:26px;padding-top:1px;">${IC[at]}</span><span style="display:table-cell;vertical-align:top;color:${cl.c};"><div style="font-weight:700;margin-bottom:2px;font-size:13px;letter-spacing:.5px;${FF}">${title}</div><div style="font-size:13px;line-height:1.6;${FF}">${body}</div></span></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'prompt':{
+      const tag=gv('f-ptag'),body=gv('f-pctnt').replace(/\n/g,'<br>');
+      return WRAP(t,id,
+        `<div class="wc-prompt"><div class="wc-ptag">${tag}</div><div class="wc-pbody">${body}</div></div>`,
+        `<div style="margin:0 0 20px;${FF}"><div style="display:inline-block;background:#993d3d;color:#fff;font-size:10px;letter-spacing:1px;padding:4px 13px;${FF}">${tag}</div><div style="background:#f2f2f2;border:1px solid rgba(229,231,235,.3);padding:16px 20px;font-size:14px;color:#2f2f2f;font-style:italic;line-height:1.75;${FF}">${body}</div></div>`);}
+
+    case 'callout':{
+      const ic=gv('f-cicon'),title=gv('f-ctitle'),body=gv('f-cbody').replace(/\n/g,'<br>');
+      return WRAP(t,id,
+        `<div class="wc-callout"><div class="wc-callout-icon">${ic}</div><div class="wc-callout-title">${title}</div><div class="wc-callout-body">${body}</div></div>`,
+        `<section style="border-left:4px solid #d82821;padding:16px 20px;margin:0 0 16px;background:rgba(216,40,33,.08);${FF}"><div style="font-size:26px;margin-bottom:6px;">${ic}</div><div style="font-size:18px;font-weight:900;color:#d82821;margin-bottom:4px;letter-spacing:.5px;${FF}">${title}</div><div style="font-size:13px;color:#374151;line-height:1.65;${FF}">${body}</div></section>`);}
+
+    case 'stats':{
+      const rows=[...document.querySelectorAll('#slist .dyn-row')];
+      const data=rows.map(r=>{const ins=r.querySelectorAll('input');return{n:ins[0]?.value||'',l:ins[1]?.value||''};});
+      const w=Math.floor(100/data.length);
+      const cells_p=data.map(d=>`<div class="wc-stat"><div class="wc-stat-n">${d.n}</div><div class="wc-stat-l">${d.l}</div></div>`).join('');
+      const cells_e=data.map((d,i)=>`<td style="width:${w}%;text-align:center;padding:15px 10px;${i<data.length-1?'border-right:1px solid rgba(216,40,33,.25);':''}${FF}"><div style="font-size:26px;font-weight:900;color:#d82821;line-height:1;margin-bottom:4px;${FF}">${d.n}</div><div style="font-size:11px;color:#9ca3af;letter-spacing:1px;${FF}">${d.l}</div></td>`).join('');
+      return WRAP(t,id,`<div class="wc-stats">${cells_p}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border:1px solid rgba(216,40,33,.25);margin:0 0 20px;"><tr>${cells_e}</tr></table>`);}
+
+    case 'numcard':{
+      const prev=`<div class="wc-numcard"><div class="wc-numcard-num">${gv('f-nn')}<span class="wc-numcard-unit">${gv('f-nu')}</span></div><div class="wc-numcard-title">${gv('f-ntitle')}</div><div class="wc-numcard-desc">${gv('f-ndesc')}</div></div>`;
+      const exp=`<section style="background:linear-gradient(135deg,#d82821,#ff4545);padding:20px 22px;margin:0 0 16px;max-width:100%;box-sizing:border-box;${FF}"><div style="line-height:1;margin-bottom:4px;"><span style="font-size:48px;font-weight:900;color:#fff;${FF}">${gv('f-nn')}</span><span style="font-size:16px;color:rgba(255,255,255,.8);margin-left:4px;${FF}">${gv('f-nu')}</span></div><div style="font-size:14px;color:rgba(255,255,255,.9);font-weight:600;margin-bottom:2px;${FF}">${gv('f-ntitle')}</div><div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.6;${FF}">${gv('f-ndesc')}</div></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'progress':{
+      const rows=[...document.querySelectorAll('#plist .dyn-row')];
+      const data=rows.map(r=>{const ins=r.querySelectorAll('input');return{l:ins[0]?.value||'',v:parseInt(ins[1]?.value||0)};});
+      const bars_p=data.map(d=>`<div class="wc-prog-item"><div class="wc-prog-hd"><span class="wc-prog-lbl">${d.l}</span><span class="wc-prog-val">${d.v}%</span></div><div class="wc-prog-track"><div class="wc-prog-fill" style="width:${d.v}%"></div></div></div>`).join('');
+      const bars_e=data.map(d=>`<div style="margin-bottom:10px;"><section style="display:table;width:100%;margin-bottom:4px;"><span style="display:table-cell;font-size:13px;color:#374151;${FF}">${d.l}</span><span style="display:table-cell;text-align:right;font-size:12px;color:#d82821;font-weight:700;${FF}">${d.v}%</span></section><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;"><tr><td style="width:${d.v}%;height:5px;background:linear-gradient(to right,#d82821,#ff4545);font-size:0;line-height:0;">&nbsp;</td><td style="height:5px;background:#f3f4f6;font-size:0;line-height:0;">&nbsp;</td></tr></table></div>`).join('');
+      return WRAP(t,id,`<div class="wc-prog">${bars_p}</div>`,`<div style="margin:0 0 18px;">${bars_e}</div>`);}
+
+    case 'rating':{
+      const rows=[...document.querySelectorAll('#rlist .dyn-row')];
+      const data=rows.map(r=>{const ins=r.querySelectorAll('input');return{l:ins[0]?.value||'',v:parseFloat(ins[1]?.value||0)};});
+      const COLORS=['#d82821','#e2561b','#16a34a','#2563eb','#9333ea','#0891b2'];
+      const bars_p=data.map((d,i)=>`<div class="wc-rating-item"><span class="wc-rating-lbl">${d.l}</span><div class="wc-rating-bar"><div class="wc-rating-fill" style="width:${d.v*10}%;background:${COLORS[i%COLORS.length]};"></div></div><span class="wc-rating-val">${d.v}</span></div>`).join('');
+      const bars_e=data.map((d,i)=>`<section style="display:table;width:100%;margin-bottom:9px;"><span style="display:table-cell;font-size:13px;color:#374151;width:80px;${FF}">${d.l}</span><span style="display:table-cell;vertical-align:middle;padding:0 8px;"><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;"><tr><td style="width:${d.v*10}%;height:8px;background:${COLORS[i%COLORS.length]};font-size:0;line-height:0;">&nbsp;</td><td style="height:8px;background:#f3f4f6;font-size:0;line-height:0;">&nbsp;</td></tr></table></span><span style="display:table-cell;font-size:12px;color:#6b7280;width:28px;text-align:right;${FF}">${d.v}</span></section>`).join('');
+      return WRAP(t,id,`<div class="wc-rating">${bars_p}</div>`,`<div style="margin:0 0 16px;">${bars_e}</div>`);}
+
+    case 'cards':{
+      const lbl=gv('f-clbl');
+      const items=[...document.querySelectorAll('#cdlist .sub-item')];
+      const cardData=items.map((el,i)=>{const ins=el.querySelectorAll('input');const ta=el.querySelector('textarea');return{num:ins[0]?.value||'',ttl:ins[1]?.value||'',bd:(ta?.value||'').split('\n').join('<br>'),pri:i===0};});
+      const cards_p=cardData.map(d=>`<div class="wc-card ${d.pri?'pri':'sec'}"><div class="wc-card-num">${d.num}</div><div class="wc-card-ttl">${d.ttl}</div><div class="wc-card-bd">${d.bd}</div></div>`).join('');
+      const cards_e=cardData.map(d=>{const bg=d.pri?'background:linear-gradient(135deg,#d82821,#ff4545);border:1px solid rgba(192,0,0,.1);':'background:#fff;border:1px solid rgba(216,40,33,.25);';const nc=d.pri?'color:rgba(255,255,255,.7);':'color:#9ca3af;';const tc=d.pri?'color:#fff;':'color:#111827;';const bc=d.pri?'color:rgba(255,255,255,.85);':'color:#6b7280;';return `<section style="display:inline-block;vertical-align:top;width:44%;${bg}padding:12px;margin-right:6px;white-space:normal;box-sizing:border-box;"><div style="font-size:9px;letter-spacing:1px;margin-bottom:4px;font-weight:700;${nc}${FF}">${d.num}</div><div style="font-size:13px;font-weight:700;margin-bottom:5px;${tc}${FF}">${d.ttl}</div><div style="font-size:10px;line-height:1.65;${bc}${FF}">${d.bd}</div></section>`;}).join('');
+      const prev=`<div class="wc-cards"><div class="wc-cards-hd"><div class="wc-cards-lbl">${lbl}</div><div class="wc-cards-hint">&gt;&gt;&gt; 滑动</div></div><div class="wc-cards-scroll">${cards_p}</div></div>`;
+      const exp=`<section style="margin:0 0 24px;${FF}"><section style="display:table;width:100%;margin-bottom:8px;"><span style="display:table-cell;font-size:10px;letter-spacing:2px;color:#6b7280;${FF}">${lbl}</span><span style="display:table-cell;text-align:right;font-size:10px;color:#9ca3af;${FF}">&gt;&gt;&gt; 滑动</span></section><section style="overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;padding-bottom:6px;">${cards_e}</section></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'divider':{
+      const dt=gv('f-dtxt');
+      const prev=`<div class="wc-div"><div class="wc-div-line"></div>${dt?`<div class="wc-div-txt">${dt}</div>`:''}<div class="wc-div-line"></div></div>`;
+      const exp=`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:18px 0;"><tr><td style="border-top:1px solid rgba(216,40,33,.2);font-size:0;line-height:0;">&nbsp;</td>${dt?`<td style="white-space:nowrap;padding:0 10px;font-size:10px;letter-spacing:3px;color:#d82821;${FF}">${dt}</td>`:''}<td style="border-top:1px solid rgba(216,40,33,.2);font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'footer':{
+      const IC=['👍','👁️','↩️'],btns=[gv('f-b1'),gv('f-b2'),gv('f-b3')];
+      const btns_p=btns.map((b,i)=>`<div class="wc-foot-btn${i===2?' act':''}"><div class="wc-foot-btn-ic">${IC[i]}</div><div class="wc-foot-btn-lbl">${b}</div></div>`).join('');
+      const btns_e=btns.map((b,i)=>{const ibg=i===2?'background:#fff3f2;border-color:rgba(255,148,148,.3);':'background:#fff;border-color:#f3f4f6;';return `<td style="text-align:center;padding:0 11px;${FF}"><div style="width:40px;height:40px;${ibg}border:1px solid;border-radius:12px;margin:0 auto 4px;text-align:center;line-height:40px;font-size:18px;box-shadow:0 2px 4px rgba(0,0,0,.05);">${IC[i]}</div><div style="font-size:10px;color:#4b5563;${FF}">${b}</div></td>`;}).join('');
+      return WRAP(t,id,
+        `<div class="wc-foot"><div class="wc-foot-btns">${btns_p}</div></div>`,
+        `<section style="text-align:center;padding:24px 16px;background:#fff;border:1px solid rgba(216,40,33,.25);border-top:none;${FF}"><table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>${btns_e}</tr></table></section>`);}
+
+    case 'tags':{
+      const rows=[...document.querySelectorAll('#tglist .dyn-row')];
+      const TS={red:'background:rgba(216,40,33,.08);border:1px solid rgba(216,40,33,.25);color:#d82821;',gray:'background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280;',dark:'background:#993d3d;color:#fff;'};
+      const tags_p=rows.map(r=>`<span class="wc-tag ${r.querySelector('select').value}">${r.querySelector('input').value}</span>`).join('');
+      const tags_e=rows.map(r=>`<span style="display:inline-block;padding:4px 12px;font-size:12px;border-radius:2px;margin:0 6px 6px 0;${TS[r.querySelector('select').value]}${FF}">${r.querySelector('input').value}</span>`).join('');
+      return WRAP(t,id,`<div class="wc-tags">${tags_p}</div>`,`<div style="margin:0 0 16px;">${tags_e}</div>`);}
+
+    case 'twocol':{
+      const lt=gv('f-lt'),lb=gv('f-lb').replace(/\n/g,'<br>'),rt=gv('f-rt'),rb=gv('f-rb').replace(/\n/g,'<br>');
+      const prev=`<div class="wc-2col"><div class="wc-col"><div class="wc-col-title">${lt}</div><div class="wc-col-body">${lb}</div></div><div class="wc-col"><div class="wc-col-title">${rt}</div><div class="wc-col-body">${rb}</div></div></div>`;
+      const exp=`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;"><tr><td style="width:49%;vertical-align:top;background:#fafafa;border:1px solid rgba(216,40,33,.25);border-top:2px solid #d82821;padding:13px 15px;${FF}"><div style="font-size:12px;font-weight:700;color:#d82821;letter-spacing:1px;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid rgba(216,40,33,.25);${FF}">${lt}</div><div style="font-size:13px;color:#374151;line-height:1.65;${FF}">${lb}</div></td><td style="width:2%;"></td><td style="width:49%;vertical-align:top;background:#fafafa;border:1px solid rgba(216,40,33,.25);border-top:2px solid #d82821;padding:13px 15px;${FF}"><div style="font-size:12px;font-weight:700;color:#d82821;letter-spacing:1px;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid rgba(216,40,33,.25);${FF}">${rt}</div><div style="font-size:13px;color:#374151;line-height:1.65;${FF}">${rb}</div></td></tr></table>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'cmp':{
+      const h0=gv('f-ch0'),h1=gv('f-ch1'),h2=gv('f-ch2');
+      const rows=[...document.querySelectorAll('#cmplist .dyn-row')];
+      const thead=`<tr><th style="background:#333;color:#fff;padding:9px 13px;text-align:left;font-weight:600;font-size:12px;letter-spacing:.5px;${FF}">${h0}</th><th style="background:#d82821;color:#fff;padding:9px 13px;text-align:center;font-weight:600;font-size:12px;letter-spacing:.5px;${FF}">${h1}</th><th style="background:#d82821;color:#fff;padding:9px 13px;text-align:center;font-weight:600;font-size:12px;letter-spacing:.5px;${FF}">${h2}</th></tr>`;
+      const tbody_p=rows.map(r=>{const ins=r.querySelectorAll('input');const v1=ins[1]?.value||'',v2=ins[2]?.value||'';const c1=v1==='✓'?'yes':v1==='✗'?'no':'';const c2=v2==='✓'?'yes':v2==='✗'?'no':'';return `<tr><td>${ins[0]?.value||''}</td><td class="${c1}" style="text-align:center;">${v1}</td><td class="${c2}" style="text-align:center;">${v2}</td></tr>`;}).join('');
+      const tbody_e=rows.map((r,i)=>{const ins=r.querySelectorAll('input');const v1=ins[1]?.value||'',v2=ins[2]?.value||'';const c1=v1==='✓'?'color:#16a34a;font-weight:700;':v1==='✗'?'color:#dc2626;font-weight:700;':'';const c2=v2==='✓'?'color:#16a34a;font-weight:700;':v2==='✗'?'color:#dc2626;font-weight:700;':'';const bb=i<rows.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':'';return `<tr><td style="padding:9px 13px;${bb}font-weight:600;color:#111827;background:#fafafa;${FF}">${ins[0]?.value||''}</td><td style="padding:9px 13px;${bb}text-align:center;${c1}${FF}">${v1}</td><td style="padding:9px 13px;${bb}text-align:center;${c2}${FF}">${v2}</td></tr>`;}).join('');
+      const prev=`<table class="wc-cmp">${thead}${tbody_p}</table>`;
+      const exp=`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;font-size:13px;border:1px solid rgba(216,40,33,.25);"><thead>${thead}</thead><tbody>${tbody_e}</tbody></table>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'kv':{
+      const rows=[...document.querySelectorAll('#kvlist .dyn-row')];
+      const data=rows.map(r=>{const ins=r.querySelectorAll('input');return{k:ins[0]?.value||'',v:ins[1]?.value||''};});
+      const kvs_p=data.map(d=>`<div class="wc-kv-row"><div class="wc-kv-k">${d.k}</div><div class="wc-kv-v">${d.v}</div></div>`).join('');
+      const kvs_e=data.map((d,i)=>`<tr><td style="width:110px;background:rgba(216,40,33,.08);padding:9px 13px;font-size:13px;font-weight:600;color:#d82821;border-right:1px solid rgba(216,40,33,.25);${i<data.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':''}${FF}">${d.k}</td><td style="padding:9px 13px;font-size:13px;color:#374151;line-height:1.6;${i<data.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':''}${FF}">${d.v}</td></tr>`).join('');
+      return WRAP(t,id,`<div class="wc-kv">${kvs_p}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border:1px solid rgba(216,40,33,.25);border-top:2px solid #d82821;margin:0 0 16px;">${kvs_e}</table>`);}
+
+    case 'image':{
+      const cap=gv('f-icap');
+      return WRAP(t,id,
+        `<div class="wc-img-wrap"><label class="wc-img-ph" for="iup-${id}" style="cursor:pointer;"><div style="font-size:28px;">🖼️</div><div style="font-size:12px;">点击上传图片</div></label><input type="file" accept="image/*" id="iup-${id}" style="display:none;" onchange="loadImg(this,'${id}')">${cap?`<div class="wc-img-cap">${cap}</div>`:''}</div>`,
+        `<div style="text-align:center;margin:0 0 16px;color:#bbb;font-size:13px;${FF}">[ 图片占位 ]${cap?`<br><span style="font-size:11px;">${cap}</span>`:''}</div>`);}
+
+    case 'bigquote':{
+      const txt=gv('f-bqtxt'), sub=gv('f-bqsub');
+      const prev=`<div class="wc-bigquote"><div class="wc-bigquote-text">${txt}</div>${sub?`<div class="wc-bigquote-sub">${sub}</div>`:''}</div>`;
+      const exp=`<section style="text-align:center;padding:28px 20px;margin:0 0 16px;border-top:3px solid #d82821;border-bottom:3px solid #d82821;${FF}"><div style="font-size:22px;font-weight:900;color:#111827;line-height:1.4;letter-spacing:1px;margin-bottom:${sub?'8':'0'}px;${FF}">${txt}</div>${sub?`<div style="font-size:13px;color:#9ca3af;letter-spacing:2px;${FF}">${sub}</div>`:''}</section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'gradtitle':{
+      const main=gv('f-gtmain'), sub=gv('f-gtsub');
+      const prev=`<div class="wc-gradtitle"><div class="wc-gradtitle-main">${main}</div><div class="wc-gradtitle-sub">${sub}</div></div>`;
+      // Gradient text: use color fallback for WeChat (no -webkit-background-clip support guaranteed)
+      const exp=`<section style="margin:0 0 16px;padding:0 0 10px;border-bottom:1px solid rgba(216,40,33,.25);${FF}"><div style="font-size:24px;font-weight:900;line-height:1.2;margin-bottom:4px;color:#d82821;${FF}">${main}</div><div style="font-size:13px;color:#9ca3af;letter-spacing:1px;${FF}">${sub}</div></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'stripe':{
+      const txt=gv('f-strtxt');
+      return WRAP(t,id,
+        `<div class="wc-stripe"><div class="wc-stripe-text">${txt}</div></div>`,
+        `<section style="background:linear-gradient(135deg,#d82821,#ff4545);padding:10px 16px;margin:0 0 16px;text-align:center;${FF}"><div style="color:#fff;font-size:13px;font-weight:700;letter-spacing:2px;${FF}">${txt}</div></section>`);}
+
+    case 'dotlist':{
+      const items=[...document.querySelectorAll('#dllist .sub-item')];
+      const prev_items=items.map(el=>{
+        const ins=el.querySelectorAll('input');
+        const title=ins[0]?.value||'', color=ins[1]?.value||'#d82821', desc=ins[2]?.value||'';
+        return `<div class="wc-dotlist-item"><div class="wc-dotlist-dot" style="background:${color};"></div><div class="wc-dotlist-body"><div class="wc-dotlist-title">${title}</div><div class="wc-dotlist-desc">${desc}</div></div></div>`;
+      }).join('');
+      const exp_items=items.map((el,i)=>{
+        const ins=el.querySelectorAll('input');
+        const title=ins[0]?.value||'', color=ins[1]?.value||'#d82821', desc=ins[2]?.value||'';
+        const bb=i<items.length-1?'border-bottom:1px solid #f3f4f6;':'';
+        return `<tr><td style="vertical-align:top;width:22px;padding:10px 0;${bb}"><div style="width:10px;height:10px;border-radius:50%;background:${color};margin-top:3px;"></div></td><td style="padding:10px 0 10px 12px;vertical-align:top;${bb}"><div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:2px;${FF}">${title}</div><div style="font-size:13px;color:#6b7280;line-height:1.6;${FF}">${desc}</div></td></tr>`;
+      }).join('');
+      return WRAP(t,id,`<div class="wc-dotlist">${prev_items}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">${exp_items}</table>`);}
+
+    case 'badgelist':{
+      const rows=[...document.querySelectorAll('#bllist .dyn-row')];
+      const prev_items=rows.map(r=>{const ins=r.querySelectorAll('input');return `<div class="wc-badge-item"><div class="wc-badge-num">${ins[0]?.value||''}</div><div class="wc-badge-body">${ins[1]?.value||''}</div></div>`;}).join('');
+      const exp_items=rows.map((r,i)=>{const ins=r.querySelectorAll('input');const bb=i<rows.length-1?'border-bottom:1px solid rgba(216,40,33,.12);':'';return `<tr><td style="vertical-align:top;padding:10px 0;${bb}width:90px;"><div style="background:#d82821;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;text-align:center;display:inline-block;${FF}">${ins[0]?.value||''}</div></td><td style="vertical-align:top;padding:10px 0 10px 14px;${bb}font-size:14px;color:#374151;line-height:1.6;${FF}">${ins[1]?.value||''}</td></tr>`;}).join('');
+      return WRAP(t,id,`<div class="wc-badgelist">${prev_items}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">${exp_items}</table>`);}
+
+    case 'faq':{
+      const items=[...document.querySelectorAll('#faqlist .sub-item')];
+      const prev_items=items.map(el=>{const q=el.querySelector('input')?.value||'';const a=el.querySelector('textarea')?.value||'';return `<div class="wc-faq-item"><div class="wc-faq-q"><div class="wc-faq-qmark">Q</div><span>${q}</span></div><div class="wc-faq-a">${a}</div></div>`;}).join('');
+      const exp_items=items.map((el,i)=>{const q=el.querySelector('input')?.value||'';const a=el.querySelector('textarea')?.value||'';const bb=i<items.length-1?'border-bottom:1px solid rgba(216,40,33,.25);':'';return `<tr><td style="padding:12px 0;vertical-align:top;${bb}"><table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin-bottom:6px;"><tr><td style="width:22px;vertical-align:top;"><div style="width:20px;height:20px;background:#d82821;color:#fff;border-radius:50%;font-size:11px;font-weight:700;text-align:center;line-height:20px;${FF}">Q</div></td><td style="padding-left:8px;font-size:14px;font-weight:700;color:#111827;${FF}">${q}</td></tr></table><div style="font-size:13px;color:#374151;line-height:1.7;padding-left:28px;${FF}">${a}</div></td></tr>`;}).join('');
+      return WRAP(t,id,`<div class="wc-faq">${prev_items}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">${exp_items}</table>`);}
+
+    case '3col':{
+      const rows=[...document.querySelectorAll('#thclist .dyn-row')];
+      const w=Math.floor(100/rows.length);
+      const prev_cells=rows.map(r=>{const ins=r.querySelectorAll('input');return `<div class="wc-3c"><div class="wc-3c-icon">${ins[0]?.value||''}</div><div class="wc-3c-title">${ins[1]?.value||''}</div><div class="wc-3c-desc">${ins[2]?.value||''}</div></div>`;}).join('');
+      const exp_cells=rows.map((r,i)=>{const ins=r.querySelectorAll('input');const br=i<rows.length-1?'border-right:1px solid rgba(216,40,33,.25);':'';return `<td style="width:${w}%;text-align:center;padding:16px 8px;background:#fafafa;border-top:2px solid #d82821;border:1px solid rgba(216,40,33,.25);border-top:2px solid #d82821;${br}${FF}"><div style="font-size:24px;margin-bottom:6px;">${ins[0]?.value||''}</div><div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:4px;${FF}">${ins[1]?.value||''}</div><div style="font-size:11px;color:#9ca3af;line-height:1.5;${FF}">${ins[2]?.value||''}</div></td>`;}).join('');
+      return WRAP(t,id,`<div class="wc-3col">${prev_cells}</div>`,`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;"><tr>${exp_cells}</tr></table>`);}
+
+    case 'proscons':{
+      const ptitle=gv('f-protitle'), ctitle=gv('f-contitle');
+      const pros=[...document.querySelectorAll('#proslist .dyn-row input')].map(i=>i.value).filter(Boolean);
+      const cons=[...document.querySelectorAll('#conslist .dyn-row input')].map(i=>i.value).filter(Boolean);
+      const prev=`<div class="wc-proscons"><div class="wc-pros"><div class="wc-pc-title">${ptitle}</div>${pros.map(p=>`<div class="wc-pc-item"><span>✓</span><span>${p}</span></div>`).join('')}</div><div class="wc-cons"><div class="wc-pc-title">${ctitle}</div>${cons.map(c=>`<div class="wc-pc-item"><span>✗</span><span>${c}</span></div>`).join('')}</div></div>`;
+      const proRows=pros.map(p=>`<div style="font-size:12px;line-height:1.65;margin-bottom:4px;color:#166534;display:table;width:100%;${FF}"><span style="display:table-cell;width:14px;color:#16a34a;font-weight:700;">✓</span><span style="display:table-cell;">${p}</span></div>`).join('');
+      const conRows=cons.map(c=>`<div style="font-size:12px;line-height:1.65;margin-bottom:4px;color:#991b1b;display:table;width:100%;${FF}"><span style="display:table-cell;width:14px;color:#dc2626;font-weight:700;">✗</span><span style="display:table-cell;">${c}</span></div>`).join('');
+      const exp=`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;"><tr><td style="width:49%;vertical-align:top;background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);border-top:2px solid #16a34a;padding:13px 15px;${FF}"><div style="font-size:12px;font-weight:700;letter-spacing:1px;color:#16a34a;margin-bottom:8px;${FF}">${ptitle}</div>${proRows}</td><td style="width:2%;"></td><td style="width:49%;vertical-align:top;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.2);border-top:2px solid #dc2626;padding:13px 15px;${FF}"><div style="font-size:12px;font-weight:700;letter-spacing:1px;color:#dc2626;margin-bottom:8px;${FF}">${ctitle}</div>${conRows}</td></tr></table>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'xhs':{
+      const tag=gv('f-xhstag'), title=gv('f-xhstitle');
+      const body=gv('f-xhsbody').replace(/\n/g,'<br>');
+      const n1=gv('f-xhs1n'), l1=gv('f-xhs1l'), more=gv('f-xhsmore');
+      const prev=`<div class="wc-xhs"><div class="wc-xhs-tag">${tag}</div><div class="wc-xhs-title">${title}</div><div class="wc-xhs-body">${body}</div><div class="wc-xhs-footer"><span class="wc-xhs-stat"><strong>${n1}</strong> ${l1}</span>${more?`<span class="wc-xhs-stat">${more}</span>`:''}</div></div>`;
+      const exp=`<section style="background:linear-gradient(135deg,#fff5f5,#fff);border:1px solid rgba(255,100,100,.2);padding:20px;margin:0 0 16px;${FF}"><div style="display:inline-block;background:#d82821;color:#fff;font-size:9px;padding:2px 8px;letter-spacing:1px;margin-bottom:10px;${FF}">${tag}</div><div style="font-size:18px;font-weight:900;color:#111827;margin-bottom:8px;line-height:1.3;${FF}">${title}</div><div style="font-size:13px;color:#374151;line-height:1.75;${FF}">${body}</div><section style="margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,100,100,.15);display:table;width:100%;"><span style="display:table-cell;font-size:11px;color:#9ca3af;${FF}"><strong style="color:#d82821;font-size:13px;">${n1}</strong> ${l1}</span>${more?`<span style="display:table-cell;text-align:right;font-size:11px;color:#9ca3af;${FF}">${more}</span>`:''}</section></section>`;
+      return WRAP(t,id,prev,exp);}
+
+    case 'imgtext':{
+      const src=gv('f-itsrc'), title=gv('f-ittitle'), body=gv('f-itbody').replace(/\n/g,'<br>');
+      const imgPrev=src?`<div class="wc-imgtext-img"><img src="${src}"></div>`:`<div class="wc-imgtext-img"><span style="font-size:28px;">🖼️</span></div>`;
+      const imgExp=src?`<img src="${src}" style="width:100px;height:100px;object-fit:cover;border-radius:8px;display:block;" />`:`<div style="width:100px;height:100px;background:#f5f5f5;border-radius:8px;"></div>`;
+      const prev=`<div class="wc-imgtext">${imgPrev}<div class="wc-imgtext-body"><div class="wc-imgtext-title">${title}</div><div class="wc-imgtext-desc">${body}</div></div></div>`;
+      const exp=`<table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;"><tr><td style="width:108px;vertical-align:top;padding-right:16px;">${imgExp}</td><td style="vertical-align:top;"><div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:6px;${FF}">${title}</div><div style="font-size:13px;color:#374151;line-height:1.65;${FF}">${body}</div></td></tr></table>`;
+      return WRAP(t,id,prev,exp);}
+
+    default:return null;
+  }
+}
+
+// 图文横排图片预览
+function pitImg(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('f-itsrc').value=e.target.result;
+    const p=document.getElementById('it-prev');
+    p.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    p.style.cssText='width:80px;height:80px;border:none;border-radius:6px;overflow:hidden;';
+  };
+  reader.readAsDataURL(file);
+}
+
+// 封面图预览
+function pcv(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('f-cimg').value=e.target.result;
+    const p=document.getElementById('cv-prev');
+    p.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    p.style.border='none'; p.style.padding='0';
+  };
+  reader.readAsDataURL(file);
+}
+
+// 图片上传
+function loadImg(input,blockId){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const block=document.getElementById(blockId);
+    const lbl=block.querySelector('label.wc-img-ph');
+    const cap=block.querySelector('.wc-img-cap');
+    if(lbl){lbl.innerHTML=`<img src="${e.target.result}" style="width:100%;height:auto;display:block;">`;lbl.style.cssText='border:none;min-height:auto;cursor:default;background:none;';}
+    const capTxt=cap?cap.textContent:'';
+    block.dataset.export=encodeURIComponent(`<div style="text-align:center;margin:0 0 16px;"><img src="${e.target.result}" style="width:100%;height:auto;display:block;">${capTxt?`<div style="font-size:11px;color:#9ca3af;text-align:center;margin-top:4px;${FF}">${capTxt}</div>`:''}</div>`);
+  };
+  reader.readAsDataURL(file);
+}
+</script>
+</body>
+</html>
